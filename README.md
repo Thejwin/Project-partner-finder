@@ -32,4 +32,7 @@ Mini Project / Academic Project
 
 ## Developed By
 
-Computer Science and Engineering Students
+- Athira K
+- Hridya M
+- Thejwin T K
+- Vaishnavi A V
