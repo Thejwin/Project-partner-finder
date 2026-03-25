@@ -2,12 +2,19 @@
 
 const { Project, Task } = require('../models');
 const paginate = require('../utils/paginate');
+const nlpService = require('./nlp.service');
 
 const AppError = (msg, code) => Object.assign(new Error(msg), { statusCode: code });
 
 // ── Create ────────────────────────────────────────────────────────────────────
 const createProject = async (ownerId, data) => {
   const project = await Project.create({ ...data, ownerId });
+  
+  if (data.requiredSkills && data.requiredSkills.length > 0) {
+    const skillNames = data.requiredSkills.map((s) => s.name);
+    nlpService.ensureSkillVectors(skillNames).catch(console.error);
+  }
+
   return project;
 };
 
@@ -126,6 +133,12 @@ const updateProject = async (projectId, data) => {
     { new: true, runValidators: true }
   ).select('-aggregateRequiredVector');
   if (!project) throw AppError('Project not found', 404);
+
+  if (data.requiredSkills && data.requiredSkills.length > 0) {
+    const skillNames = data.requiredSkills.map((s) => s.name);
+    nlpService.ensureSkillVectors(skillNames).catch(console.error);
+  }
+
   return project;
 };
 

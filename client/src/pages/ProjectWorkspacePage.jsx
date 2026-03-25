@@ -8,6 +8,7 @@ import { useNotification } from '../context/NotificationContext';
 import { projectService, userService } from '../services';
 import { cn } from '../utils/cn';
 import { useState, useEffect } from 'react';
+import { EditProjectModal } from '../components/project/EditProjectModal';
 
 export const ProjectWorkspacePage = () => {
   const { projectId } = useParams();
@@ -20,6 +21,7 @@ export const ProjectWorkspacePage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Fix isOwner logic - ensure we use user?._id and compare strings
   const isOwner = data?.data?.project?.ownerId?._id === user?._id || data?.data?.project?.ownerId === user?._id;
@@ -88,13 +90,15 @@ export const ProjectWorkspacePage = () => {
               <FolderKanban className="w-5 h-5" />
               Task Board
             </Link>
-            <button 
-              onClick={() => addToast('Project settings coming soon!', 'info')}
-              className="flex items-center gap-2 bg-surface-100 text-surface-700 px-5 py-2.5 rounded-lg font-medium hover:bg-surface-200 transition-colors w-full justify-center border border-surface-200"
-            >
-              <Settings className="w-5 h-5" />
-              Settings
-            </button>
+            {isOwner && (
+              <button 
+                onClick={() => setIsEditModalOpen(true)}
+                className="flex items-center gap-2 bg-surface-100 text-surface-700 px-5 py-2.5 rounded-lg font-medium hover:bg-surface-200 transition-colors w-full justify-center border border-surface-200"
+              >
+                <Settings className="w-5 h-5" />
+                Settings
+              </button>
+            )}
             
             {project.ownerId._id !== user._id && !project.collaborators.some(c => c._id === user._id) && (
               <button 
@@ -355,6 +359,12 @@ export const ProjectWorkspacePage = () => {
           </div>
         )}
       </div>
+
+      <EditProjectModal 
+        isOpen={isEditModalOpen} 
+        onClose={() => setIsEditModalOpen(false)} 
+        project={project} 
+      />
     </div>
   );
 };

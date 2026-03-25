@@ -39,7 +39,7 @@ const requiredSkillEntrySchema = new Schema(
     skillVectorId: {
       type: Schema.Types.ObjectId,
       ref: 'SkillVector',
-      required: true,
+      default: null,
     },
   },
   { _id: false }

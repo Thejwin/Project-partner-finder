@@ -1,6 +1,7 @@
 'use strict';
 
 const { Profile } = require('../models');
+const nlpService = require('./nlp.service');
 
 const AppError = (msg, code) => Object.assign(new Error(msg), { statusCode: code });
 
@@ -48,6 +49,13 @@ const updateSkills = async (userId, skills) => {
   ).select('skills skillVectorUpdatedAt');
 
   if (!profile) throw AppError('Profile not found', 404);
+
+  // Async integration: ensure AI embeddings exist for the new skills
+  if (skills && skills.length > 0) {
+    const skillNames = skills.map((s) => s.name);
+    nlpService.ensureSkillVectors(skillNames).catch(console.error);
+  }
+
   return profile;
 };
 

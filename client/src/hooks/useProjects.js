@@ -40,6 +40,18 @@ export const useCreateProject = () => {
   });
 };
 
+export const useUpdateProject = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: projectService.updateProject,
+    onSuccess: (updatedProject, variables) => {
+      // variables.id is the project ID
+      queryClient.invalidateQueries({ queryKey: ['projects', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
+  });
+};
+
 export const useProposals = (projectId) => {
   return useQuery({
     queryKey: ['projects', projectId, 'proposals'],

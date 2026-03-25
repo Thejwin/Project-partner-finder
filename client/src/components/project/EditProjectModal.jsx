@@ -1,24 +1,40 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { useCreateProject } from '../../hooks/useProjects';
+import { useUpdateProject } from '../../hooks/useProjects';
 import { useNotification } from '../../context/NotificationContext';
 
-export const CreateProjectModal = ({ isOpen, onClose }) => {
-  const { mutate: createProject, isLoading } = useCreateProject();
+export const EditProjectModal = ({ isOpen, onClose, project }) => {
+  const { mutate: updateProject, isLoading } = useUpdateProject();
   const { addToast } = useNotification();
   
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    date: new Date().toISOString().split('T')[0],
+    date: '',
     type: 'Free',
     visibility: 'public',
     requiredSkills: []
   });
 
   const [skillInput, setSkillInput] = useState('');
+
+  // Pre-populate form when project data is available or modal opens
+  useEffect(() => {
+    if (project && isOpen) {
+      setFormData({
+        title: project.title || '',
+        description: project.description || '',
+        date: project.date ? new Date(project.date).toISOString().split('T')[0] : '',
+        type: project.type || 'Free',
+        visibility: project.visibility || 'public',
+        // project.requiredSkills comes as [{name: 'str', importance: 'required'}]
+        requiredSkills: project.requiredSkills ? project.requiredSkills.map(s => s.name) : []
+      });
+      setSkillInput('');
+    }
+  }, [project, isOpen]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -31,22 +47,13 @@ export const CreateProjectModal = ({ isOpen, onClose }) => {
       }))
     };
 
-    createProject(payload, {
+    updateProject({ id: project._id, data: payload }, {
       onSuccess: () => {
-        addToast('Project created successfully!', 'success');
+        addToast('Project updated successfully!', 'success');
         onClose();
-        setSkillInput('');
-        setFormData({
-          title: '',
-          description: '',
-          date: new Date().toISOString().split('T')[0],
-          type: 'Free',
-          visibility: 'public',
-          requiredSkills: []
-        });
       },
       onError: (error) => {
-        addToast(error.response?.data?.error || 'Failed to create project', 'error');
+        addToast(error.response?.data?.error || 'Failed to update project', 'error');
       }
     });
   };
@@ -75,7 +82,7 @@ export const CreateProjectModal = ({ isOpen, onClose }) => {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Create New Project">
+    <Modal isOpen={isOpen} onClose={onClose} title="Edit Project">
       <form onSubmit={handleSubmit} className="space-y-6">
         <Input
           label="Title"
@@ -208,7 +215,7 @@ export const CreateProjectModal = ({ isOpen, onClose }) => {
             Cancel
           </Button>
           <Button type="submit" isLoading={isLoading}>
-            Create Project
+            Save Changes
           </Button>
         </div>
       </form>
