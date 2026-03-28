@@ -124,11 +124,14 @@ export const ProjectWorkspacePage = () => {
           <div className="mt-8 pt-6 border-t border-surface-100">
             <h3 className="text-sm font-semibold text-surface-700 mb-3 uppercase tracking-wider">Required Skills</h3>
             <div className="flex flex-wrap gap-2">
-              {project.requiredSkills.map(skill => (
-                <span key={skill} className="px-3 py-1 bg-surface-100 text-surface-800 rounded-full text-sm font-medium border border-surface-200/60">
-                  {skill}
-                </span>
-              ))}
+              {project.requiredSkills.map((skill, index) => {
+                const skillName = typeof skill === 'string' ? skill : skill.name;
+                return (
+                  <span key={skillName || index} className="px-3 py-1 bg-surface-100 text-surface-800 rounded-full text-sm font-medium border border-surface-200/60">
+                    {skillName}
+                  </span>
+                );
+              })}
             </div>
           </div>
         )}

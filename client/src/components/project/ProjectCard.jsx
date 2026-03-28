@@ -51,11 +51,14 @@ export const ProjectCard = ({ project, className }) => {
 
         {project.requiredSkills?.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-4">
-            {project.requiredSkills.slice(0, 3).map(skill => (
-              <span key={skill} className="px-2 py-0.5 bg-surface-100 text-surface-600 rounded-md text-[11px] font-medium">
-                {skill}
-              </span>
-            ))}
+            {project.requiredSkills.slice(0, 3).map((skill, index) => {
+              const skillName = typeof skill === 'string' ? skill : skill.name;
+              return (
+                <span key={skillName || index} className="px-2 py-0.5 bg-surface-100 text-surface-600 rounded-md text-[11px] font-medium">
+                  {skillName}
+                </span>
+              );
+            })}
             {project.requiredSkills.length > 3 && (
               <span className="px-2 py-0.5 bg-surface-100 text-surface-600 rounded-md text-[11px] font-medium">
                 +{project.requiredSkills.length - 3}
