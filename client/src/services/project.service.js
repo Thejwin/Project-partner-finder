@@ -21,6 +21,11 @@ export const getCollaboratingProjects = async (params) => {
   return res.data;
 };
 
+export const getRecommendedProjects = async () => {
+  const res = await api.get('/projects/recommendations');
+  return res.data;
+};
+
 // Single project
 export const getProjectById = async (id) => {
   const res = await api.get(`/projects/${id}`);

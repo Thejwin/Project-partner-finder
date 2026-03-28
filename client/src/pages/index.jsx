@@ -176,7 +176,7 @@ export const NotificationsPage = () => {
     const inp = "block w-full px-3 py-2 border border-surface-200 rounded-lg text-sm text-surface-900 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent";
     const sel = inp + " bg-white";
 
-    const matchScore = profile?.performanceAnalytics?.averageMatchScore;
+    const reputation = profile?.performanceAnalytics?.reputationScore ?? 0;
     const SECTIONS = [
       { id: 'basic',      label: 'Basic Info' },
       { id: 'skills',     label: `Skills (${skills.length})` },
@@ -225,11 +225,6 @@ export const NotificationsPage = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 flex-wrap">
                     <h2 className="text-xl font-bold text-surface-900">{profile?.name || 'No name set'}</h2>
-                    {matchScore != null && matchScore > 0 && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        ⭐ {Math.round(matchScore * 100)}% match score
-                      </span>
-                    )}
                   </div>
                   {profile?.header      && <p className="text-surface-600 mt-1">{profile.header}</p>}
                   {profile?.location    && <p className="text-sm text-surface-500 mt-1">📍 {profile.location}</p>}
@@ -241,10 +236,8 @@ export const NotificationsPage = () => {
               {profile?.performanceAnalytics && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-surface-100">
                   {[
-                    { label: 'Profile Views',          value: profile.performanceAnalytics.profileViews ?? 0 },
-                    { label: 'Applications Received',  value: profile.performanceAnalytics.projectApplicationsReceived ?? 0 },
+                    { label: 'Reputation Score',     value: reputation },
                     { label: 'Collaborations Done',    value: profile.performanceAnalytics.collaborationsCompleted ?? 0 },
-                    { label: 'Avg Match Score',        value: matchScore != null ? `${Math.round(matchScore * 100)}%` : '–' },
                   ].map(stat => (
                     <div key={stat.label} className="text-center">
                       <p className="text-2xl font-bold text-primary-600">{stat.value}</p>
@@ -576,20 +569,26 @@ export const NotificationsPage = () => {
                   )}
                   <div className="space-y-3">
                     {links.map((link, i) => (
-                      <div key={i} className="flex gap-3 items-center bg-surface-50 rounded-xl p-3">
-                        <select className={sel + " w-36 shrink-0"} value={link.platform}
-                          onChange={e => updateItem(setLinks, i, 'platform', e.target.value)}>
-                          <option value="github">GitHub</option>
-                          <option value="linkedin">LinkedIn</option>
-                          <option value="twitter">Twitter</option>
-                          <option value="portfolio">Portfolio</option>
-                          <option value="other">Other</option>
-                        </select>
-                        <input type="url" className={inp} placeholder="https://..."
-                          value={link.url}
-                          onChange={e => updateItem(setLinks, i, 'url', e.target.value)} />
+                      <div key={i} className="flex flex-col sm:flex-row gap-3 items-end sm:items-center bg-surface-50 rounded-xl p-4">
+                        <div className="w-full sm:w-36 shrink-0">
+                          <label className="block text-xs font-semibold text-surface-600 mb-1">Platform</label>
+                          <select className={sel} value={link.platform}
+                            onChange={e => updateItem(setLinks, i, 'platform', e.target.value)}>
+                            <option value="github">GitHub</option>
+                            <option value="linkedin">LinkedIn</option>
+                            <option value="twitter">Twitter</option>
+                            <option value="portfolio">Portfolio</option>
+                            <option value="other">Other</option>
+                          </select>
+                        </div>
+                        <div className="flex-1 w-full">
+                          <label className="block text-xs font-semibold text-surface-600 mb-1">Actual Link (URL)</label>
+                          <input type="url" className={inp} placeholder="https://github.com/yourusername"
+                            value={link.url}
+                            onChange={e => updateItem(setLinks, i, 'url', e.target.value)} />
+                        </div>
                         <button onClick={() => removeItem(setLinks, i)}
-                          className="text-surface-400 hover:text-red-500 transition-colors shrink-0 p-1" title="Remove">✕</button>
+                          className="text-surface-400 hover:text-red-500 transition-colors shrink-0 p-1 mb-1.5" title="Remove">✕</button>
                       </div>
                     ))}
                   </div>

@@ -22,6 +22,13 @@ export const useCollaboratingProjects = (params) => {
   });
 };
 
+export const useRecommendedProjects = () => {
+  return useQuery({
+    queryKey: ['projects', 'recommended'],
+    queryFn: () => projectService.getRecommendedProjects(),
+  });
+};
+
 export const useProjectDetails = (id) => {
   return useQuery({
     queryKey: ['projects', id],

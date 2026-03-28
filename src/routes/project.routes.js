@@ -14,6 +14,7 @@ router.get  ('/',          ctrl.getProjects);                      // Public
 router.get  ('/search',    ctrl.searchProjects);                   // Public
 router.get  ('/me',        protect, ctrl.getMyProjects);
 router.get  ('/collaborating', protect, ctrl.getCollaboratingProjects);
+router.get  ('/recommendations', protect, ctrl.getRecommendedProjects);
 
 // ── Single project ────────────────────────────────────────────────────────────
 router.post ('/',              protect, validate(schema.createProject), ctrl.createProject);

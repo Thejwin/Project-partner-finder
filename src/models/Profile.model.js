@@ -89,10 +89,8 @@ const offlineProfileSchema = new Schema(
 
 const performanceAnalyticsSchema = new Schema(
   {
-    profileViews: { type: Number, default: 0, min: 0 },
-    projectApplicationsReceived: { type: Number, default: 0, min: 0 },
+    reputationScore: { type: Number, default: 0, min: 0 },
     collaborationsCompleted: { type: Number, default: 0, min: 0 },
-    averageMatchScore: { type: Number, default: 0, min: 0, max: 1 },
   },
   { _id: false }
 );

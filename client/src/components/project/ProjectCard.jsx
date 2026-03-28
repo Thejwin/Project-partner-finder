@@ -22,6 +22,13 @@ export const ProjectCard = ({ project, className }) => {
               {project.visibility}
             </span>
           </div>
+
+          {project.matchScore && (
+            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-100/80 text-amber-800 rounded-full border border-amber-200">
+              <span className="text-[10px] font-bold">MATCH</span>
+              <span className="text-xs font-black">{Math.round(project.matchScore.score * 100)}%</span>
+            </div>
+          )}
           
           <div className="flex -space-x-2">
             {/* Owner avatar placeholder */}

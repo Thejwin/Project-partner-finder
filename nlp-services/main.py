@@ -87,8 +87,15 @@ def compute_match(data: MatchRequest):
     user_skills    = profile.get("skills", [])          # [{name, level, ...}]
     project_skills = project.get("requiredSkills", [])  # [{name, importance, ...}]
 
-    if not user_skills or not project_skills:
-        return {"error": "Missing skills"}
+    print(f"DEBUG: Computing match for User {data.userId} ({len(user_skills)} skills) and Project {data.projectId} ({len(project_skills)} skills)")
+
+    if not user_skills:
+        print(f"DEBUG: User {data.userId} has NO skills in profile.")
+        return {"error": "User profile has no skills"}
+
+    if not project_skills:
+        print(f"DEBUG: Project {data.projectId} has NO required skills.")
+        return {"error": "Project has no required skills"}
 
     breakdown = []
     matched = []
@@ -101,6 +108,7 @@ def compute_match(data: MatchRequest):
         u_vec_doc = skill_vectors.find_one({"name": u_name})
 
         if not u_vec_doc:
+            print(f"DEBUG: No vector found for user skill: {u_name}")
             continue
 
         best_score = 0
@@ -111,9 +119,11 @@ def compute_match(data: MatchRequest):
             p_vec_doc = skill_vectors.find_one({"name": p_name})
 
             if not p_vec_doc:
+                print(f"DEBUG: No vector found for project skill: {p_name}")
                 continue
 
             score = cosine_similarity(u_vec_doc["vector"], p_vec_doc["vector"])
+            print(f"DEBUG: Comparing '{u_name}' vs '{p_name}': {score:.4f}")
 
             if score > best_score:
                 best_score = score
@@ -134,9 +144,11 @@ def compute_match(data: MatchRequest):
                 missing.append(u_name)
 
     if not similarities:
-        return {"error": "No valid comparisons"}
+        print(f"DEBUG: No valid comparisons for User {data.userId} vs Project {data.projectId}. Possible cause: No vectors found for the skills used.")
+        return {"error": "No valid comparisons (missing skill vectors)"}
 
     final_score = sum(similarities) / len(similarities)
+    print(f"DEBUG: Final match score: {final_score:.4f}")
 
     # UPSERT SkillMatchScore
     match_scores.update_one(

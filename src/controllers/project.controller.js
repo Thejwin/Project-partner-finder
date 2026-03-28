@@ -2,6 +2,7 @@
 
 const projectService    = require('../services/project.service');
 const membershipService = require('../services/membership.service');
+const recommendationService = require('../services/recommendation.service');
 const { success, created } = require('../utils/apiResponse');
 const asyncHandler       = require('../utils/asyncHandler');
 
@@ -89,4 +90,9 @@ exports.inviteUser = asyncHandler(async (req, res) => {
 exports.addCollaborator = asyncHandler(async (req, res) => {
   const result = await membershipService.addCollaborator(req.params.projectId, req.params.userId);
   success(res, result);
+});
+
+exports.getRecommendedProjects = asyncHandler(async (req, res) => {
+  const projects = await recommendationService.getRecommendedProjects(req.user._id);
+  success(res, { projects });
 });

@@ -38,9 +38,17 @@ const ensureSkillVectors = async (skills) => {
 const computeMatch = async (userId, projectId) => {
   try {
     const res = await nlpClient.post('/api/match/compute', { userId, projectId });
+    
+    // The Python service might return a 200 OK but with an "error" field in the body
+    if (res.data && res.data.error) {
+      console.warn(`[NLP Service Warning] Match computation returned error for User ${userId}, Project ${projectId}:`, res.data.error);
+      return res.data;
+    }
+
     return res.data;
   } catch (err) {
-    console.error('[NLP Service Error] Failed to compute match:', err.message);
+    const detail = err.response?.data?.error || err.response?.data || err.message;
+    console.error(`[NLP Service Error] Failed to compute match for User ${userId}, Project ${projectId}:`, detail);
     return null;
   }
 };
