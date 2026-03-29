@@ -15,7 +15,8 @@ export const CreateProjectModal = ({ isOpen, onClose }) => {
     date: new Date().toISOString().split('T')[0],
     type: 'Free',
     visibility: 'public',
-    requiredSkills: []
+    requiredSkills: [],
+    readme: ''
   });
 
   const [skillInput, setSkillInput] = useState('');
@@ -42,7 +43,8 @@ export const CreateProjectModal = ({ isOpen, onClose }) => {
           date: new Date().toISOString().split('T')[0],
           type: 'Free',
           visibility: 'public',
-          requiredSkills: []
+          requiredSkills: [],
+          readme: ''
         });
       },
       onError: (error) => {
@@ -88,17 +90,32 @@ export const CreateProjectModal = ({ isOpen, onClose }) => {
         
         <div className="w-full">
           <label className="block text-sm font-medium text-surface-700 mb-1.5">
-            Description
+            Short Description
           </label>
           <textarea
             name="description"
             className="block w-full rounded-lg border-surface-300 bg-white px-4 py-2 text-surface-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-            rows="4"
-            placeholder="Describe your project..."
+            rows="3"
+            placeholder="Describe your project briefly..."
             value={formData.description}
             onChange={handleChange}
             required
           />
+        </div>
+
+        <div className="w-full">
+          <label className="block text-sm font-medium text-surface-700 mb-1.5">
+            Project README (detailed overview)
+          </label>
+          <textarea
+            name="readme"
+            className="block w-full rounded-lg border-surface-300 bg-white px-4 py-2 text-surface-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 font-mono text-sm"
+            rows="5"
+            placeholder="Detailed project documentation, goals, and setup..."
+            value={formData.readme}
+            onChange={handleChange}
+          />
+          <p className="text-xs text-surface-500 mt-1">This will be displayed on the Project Overview tab.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

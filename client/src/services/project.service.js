@@ -100,3 +100,8 @@ export const submitRating = async ({ projectId, rateeId, score, comment }) => {
   const res = await api.post(`/projects/${projectId}/ratings`, { rateeId, score, comment });
   return res.data;
 };
+
+export const getActivities = async (projectId) => {
+  const res = await api.get(`/projects/${projectId}/activities`);
+  return res.data;
+};

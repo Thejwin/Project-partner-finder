@@ -1,7 +1,13 @@
 import { useParams } from 'react-router-dom';
-import { useProjectDetails, useProposals, useRespondToProposal, useAddCollaborator, useFinishProject, useLeaveProject } from '../hooks/useProjects';
+import { useProjectDetails, useProposals, useRespondToProposal, useAddCollaborator, useFinishProject, useLeaveProject, useRemoveCollaborator } from '../hooks/useProjects';
+import { useTasks } from '../hooks/useTasks';
+import { useActivities } from '../hooks/useActivities';
 import { useProjectStore } from '../store/useProjectStore';
-import { Users, LayoutTemplate, Sparkles, FolderKanban, Settings, Search, UserPlus, X, CheckCircle2, Star, LogOut } from 'lucide-react';
+import { 
+  Users, LayoutTemplate, Sparkles, FolderKanban, Settings, Search, UserPlus, X, 
+  CheckCircle2, Star, LogOut, Calendar, TrendingUp, Clock, ClipboardList, UserCheck,
+  Info, History, FileText, Trash2
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
@@ -34,6 +40,16 @@ export const ProjectWorkspacePage = () => {
   const { mutate: addMember, isLoading: isAddingMember } = useAddCollaborator(projectId);
   const { mutate: finishProject, isLoading: isFinishing } = useFinishProject(projectId);
   const { mutate: leaveProject, isLoading: isLeaving } = useLeaveProject(projectId);
+  const { mutate: removeMember, isLoading: isRemovingMember } = useRemoveCollaborator(projectId);
+
+  // New data for Overview
+  const { data: tasksData } = useTasks(projectId);
+  const { data: activitiesData, isLoading: isLoadingActivities } = useActivities(projectId);
+  
+  const tasks = tasksData?.data?.tasks || [];
+  const completedTasks = tasks.filter(t => t.status === 'done').length;
+  const progressPercent = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
+  const activities = activitiesData?.data?.activities || [];
 
   const isMember = data?.data?.project?.collaborators?.some(c => c._id === user?._id) || isOwner;
 
@@ -209,11 +225,136 @@ export const ProjectWorkspacePage = () => {
       {/* Content Area */}
       <div className="flex-1 bg-white rounded-2xl border border-surface-200 p-6 shadow-sm min-h-[400px]">
         {activeTab === 'overview' && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-bold text-surface-900">Project Overview</h2>
-            <div className="prose prose-surface max-w-none">
-               <p>This is where the detailed README or wiki content for the project would go.</p>
-               <p>It supports markdown rendering to allow project owners to document their architecture and goals.</p>
+          <div className="flex flex-col gap-8">
+            {/* 1. Header Stats / Progress */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-primary-50 border border-primary-100 p-5 rounded-2xl shadow-sm">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-white rounded-lg text-primary-600 shadow-sm"><TrendingUp className="w-5 h-5" /></div>
+                  <p className="text-sm font-bold text-primary-900 uppercase tracking-tight">Progress</p>
+                </div>
+                <div className="flex items-end justify-between gap-2 mb-2">
+                  <p className="text-3xl font-black text-primary-700">{progressPercent}%</p>
+                  <p className="text-sm font-semibold text-primary-600 mb-1">{completedTasks}/{tasks.length} Done</p>
+                </div>
+                <div className="w-full h-2 bg-primary-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-primary-600 rounded-full transition-all duration-500" style={{ width: `${progressPercent}%` }}></div>
+                </div>
+              </div>
+
+              {[
+                { label: 'Team Size', value: project.collaborators.length + 1, icon: UserCheck, color: 'blue' },
+                { label: 'Open Tasks', value: tasks.filter(t => t.status !== 'done').length, icon: ClipboardList, color: 'amber' },
+                { label: 'Pending Requests', value: proposalsData?.data?.proposals?.filter(p => p.status === 'pending').length || 0, icon: Sparkles, color: 'purple' },
+              ].map(stat => (
+                <div key={stat.label} className={`bg-white border border-surface-200 p-5 rounded-2xl shadow-sm`}>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-surface-50 rounded-lg text-surface-500"><stat.icon className="w-5 h-5" /></div>
+                    <p className="text-sm font-bold text-surface-500 uppercase tracking-tight">{stat.label}</p>
+                  </div>
+                  <p className="text-3xl font-black text-surface-900">{stat.value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* 2. Main Content Split */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Left: About & README */}
+              <div className="lg:col-span-2 space-y-6">
+                <section>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-surface-900 flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-primary-500" />
+                      Project README
+                    </h3>
+                    {isOwner && (
+                      <button 
+                        onClick={() => setIsEditModalOpen(true)}
+                        className="text-sm font-semibold text-primary-600 hover:text-primary-700 hover:underline transition-all"
+                      >
+                        Edit Documentation
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="bg-surface-50 border border-surface-200 rounded-2xl p-6 min-h-[300px]">
+                    {!project.readme ? (
+                      <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                        <Info className="w-10 h-10 text-surface-300 mb-3" />
+                        <p className="text-surface-500 font-medium">No detailed documentation yet.</p>
+                        {isOwner && <p className="text-sm text-surface-400 mt-1">Add a README in project settings to guide your team.</p>}
+                      </div>
+                    ) : (
+                      <div className="prose prose-surface max-w-none">
+                        <p className="text-surface-700 whitespace-pre-wrap leading-relaxed font-sans text-base">
+                          {project.readme}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+                
+                {/* Timeline info */}
+                <section className="grid sm:grid-cols-2 gap-4">
+                  <div className="p-4 bg-white border border-surface-200 rounded-xl flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600"><Clock className="w-5 h-5" /></div>
+                    <div>
+                      <p className="text-xs font-bold text-surface-400 uppercase tracking-wider">Started On</p>
+                      <p className="font-bold text-surface-900">{new Date(project.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                    </div>
+                  </div>
+                  <div className="p-4 bg-white border border-surface-200 rounded-xl flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-600"><Calendar className="w-5 h-5" /></div>
+                    <div>
+                      <p className="text-xs font-bold text-surface-400 uppercase tracking-wider">Target Date</p>
+                      <p className="font-bold text-surface-900">{new Date(project.date).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              {/* Right: Activity Log */}
+              <div className="space-y-6">
+                 <h3 className="text-lg font-bold text-surface-900 flex items-center gap-2 mb-4">
+                   <History className="w-5 h-5 text-primary-500" />
+                   Recent Activity
+                 </h3>
+
+                 <div className="relative">
+                   {/* Vertical Line */}
+                   <div className="absolute left-6 top-1 bottom-1 w-0.5 bg-surface-100" />
+                   
+                   <div className="space-y-6">
+                     {isLoadingActivities ? (
+                       [1,2,3].map(i => <div key={i} className="h-16 bg-surface-50 rounded-xl animate-pulse ml-12" />)
+                     ) : activities.length === 0 ? (
+                       <p className="text-sm text-surface-400 italic text-center py-8">No recent activity found.</p>
+                     ) : (
+                       activities.slice(0, 10).map((act, i) => (
+                         <div key={act._id || i} className="relative pl-12">
+                           {/* Log Roundel */}
+                           <div className="absolute left-[20px] top-0 w-2 h-2 rounded-full bg-primary-500 border-4 border-white shadow-[0_0_0_2px_#f1f5f9]" />
+                           
+                           <div>
+                             <p className="text-sm text-surface-800 leading-snug">
+                               <span className="font-bold text-surface-950">{act.userId?.username || 'System'}</span> {act.description}
+                             </p>
+                             <p className="text-[10px] font-bold text-surface-400 uppercase mt-1">
+                               {new Date(act.createdAt).toLocaleString(undefined, { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' })}
+                             </p>
+                           </div>
+                         </div>
+                       ))
+                     )}
+                   </div>
+                   
+                   {activities.length > 10 && (
+                     <p className="text-xs text-center text-surface-400 mt-6 pt-4 border-t border-surface-50 font-medium cursor-default">
+                       Showing latest 10 events
+                     </p>
+                   )}
+                 </div>
+              </div>
             </div>
           </div>
         )}
@@ -326,16 +467,36 @@ export const ProjectWorkspacePage = () => {
               
               {/* Members */}
               {project.collaborators.map((c, i) => (
-                <div key={c._id || i} className="flex items-center gap-4 p-4 rounded-xl border border-surface-200 bg-white shadow-sm">
-                  <Link to={`/users/${c._id}`} className="w-12 h-12 bg-surface-200 rounded-full flex items-center justify-center font-bold text-surface-600 text-lg hover:opacity-80 transition-opacity shrink-0">
-                    {c.username?.[0]?.toUpperCase() || '?'}
-                  </Link>
-                  <div>
-                    <Link to={`/users/${c._id}`} className="font-bold text-surface-900 hover:text-primary-600 transition-colors">
-                      {c.username || 'Collaborator'}
+                <div key={c._id || i} className="flex items-center justify-between p-4 rounded-xl border border-surface-200 bg-white shadow-sm hover:border-surface-300 transition-all group">
+                  <div className="flex items-center gap-4">
+                    <Link to={`/users/${c._id}`} className="w-12 h-12 bg-surface-200 rounded-full flex items-center justify-center font-bold text-surface-600 text-lg hover:opacity-80 transition-opacity shrink-0">
+                      {c.username?.[0]?.toUpperCase() || '?'}
                     </Link>
-                    <p className="text-xs text-surface-500 font-medium tracking-wide uppercase mt-0.5">Member</p>
+                    <div>
+                      <Link to={`/users/${c._id}`} className="font-bold text-surface-900 hover:text-primary-600 transition-colors">
+                        {c.username || 'Collaborator'}
+                      </Link>
+                      <p className="text-xs text-surface-500 font-medium tracking-wide uppercase mt-0.5">Member</p>
+                    </div>
                   </div>
+
+                  {isOwner && (
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Are you sure you want to remove ${c.username} from the project?`)) {
+                          removeMember(c._id, {
+                            onSuccess: () => addToast(`${c.username} removed from project`, 'success'),
+                            onError: (err) => addToast(err.response?.data?.error || 'Failed to remove member', 'error')
+                          });
+                        }
+                      }}
+                      disabled={isRemovingMember}
+                      className="p-2 text-surface-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                      title="Remove Member"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

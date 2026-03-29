@@ -72,6 +72,13 @@ const projectSchema = new Schema(
       maxlength: [5000, 'Description cannot exceed 5000 characters'],
     },
 
+    readme: {
+      type: String,
+      default: '',
+      trim: true,
+      maxlength: [10000, 'README cannot exceed 10000 characters'],
+    },
+
     date: {
       type: Date,
       required: [true, 'Project start date is required'],

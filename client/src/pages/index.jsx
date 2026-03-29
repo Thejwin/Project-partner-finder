@@ -453,8 +453,8 @@ export const ProfilePage = () => {
               <button key={s.id}
                 onClick={() => setActiveSection(s.id)}
                 className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeSection === s.id
-                    ? 'bg-white text-primary-700 shadow-sm'
-                    : 'text-surface-500 hover:text-surface-700'
+                  ? 'bg-white text-primary-700 shadow-sm'
+                  : 'text-surface-500 hover:text-surface-700'
                   }`}>
                 {s.label}
               </button>
@@ -729,7 +729,7 @@ export const UserProfilePage = () => {
     <div className="max-w-4xl mx-auto h-full flex flex-col gap-6 pb-12">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-surface-900">{user.username}'s Profile</h1>
-        <button 
+        <button
           onClick={() => setIsReportOpen(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-200"
         >
@@ -748,8 +748,8 @@ export const UserProfilePage = () => {
           <div className="bg-white rounded-2xl border border-surface-200 p-8 shadow-sm">
             <div className="flex items-start gap-6">
               <div className="w-20 h-20 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 text-2xl font-bold shrink-0">
-                {profile.profilePicture 
-                  ? <img src={profile.profilePicture} alt="Profile" className="w-20 h-20 rounded-full object-cover" /> 
+                {profile.profilePicture
+                  ? <img src={profile.profilePicture} alt="Profile" className="w-20 h-20 rounded-full object-cover" />
                   : (profile.name?.[0] || '?').toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
@@ -777,7 +777,7 @@ export const UserProfilePage = () => {
               </div>
             </div>
           )}
-          
+
           {/* Projects */}
           {userData.data?.projects?.length > 0 && (
             <div className="bg-white rounded-2xl border border-surface-200 p-6 shadow-sm">
@@ -799,9 +799,9 @@ export const UserProfilePage = () => {
       )}
 
       {/* Report Modal */}
-      <ReportModal 
-        isOpen={isReportOpen} 
-        onClose={() => setIsReportOpen(false)} 
+      <ReportModal
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
         reportedUserId={user._id}
         title={`User: ${user.username}`}
       />
@@ -835,7 +835,7 @@ export const FriendsPage = () => {
   // Search query hook
   const { data: searchData, isLoading: searchLoading } = useQuery({
     queryKey: ['users', 'search', searchQuery],
-    queryFn: () => userService.searchUsers(searchQuery),
+    queryFn: () => userService.searchUsers({ q: searchQuery }),
     enabled: searchQuery.length >= 2,
   });
 

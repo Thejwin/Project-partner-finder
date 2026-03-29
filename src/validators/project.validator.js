@@ -15,6 +15,7 @@ const createProject = Joi.object({
       importance: Joi.string().valid('nice-to-have','required','critical').default('required'),
     })
   ).max(30),
+  readme:        Joi.string().max(10000).allow('').default(''),
 });
 
 const updateProject = Joi.object({
@@ -31,6 +32,7 @@ const updateProject = Joi.object({
       importance: Joi.string().valid('nice-to-have','required','critical').default('required'),
     })
   ).max(30),
+  readme:        Joi.string().max(10000).allow(''),
 });
 
 const submitRating = Joi.object({

@@ -110,6 +110,16 @@ export const useLeaveProject = (projectId) => {
   });
 };
 
+export const useRemoveCollaborator = (projectId) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userId) => projectService.removeCollaborator({ projectId, userId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
+    },
+  });
+};
+
 export const useRatings = (projectId) => {
   return useQuery({
     queryKey: ['projects', projectId, 'ratings'],

@@ -4,6 +4,7 @@ const projectService    = require('../services/project.service');
 const membershipService = require('../services/membership.service');
 const recommendationService = require('../services/recommendation.service');
 const ratingService     = require('../services/rating.service');
+const { logActivity, getActivitiesByProject } = require('../services/activity.service');
 const { success, created } = require('../utils/apiResponse');
 const asyncHandler       = require('../utils/asyncHandler');
 
@@ -40,6 +41,14 @@ exports.getProjectById = asyncHandler(async (req, res) => {
 
 exports.updateProject = asyncHandler(async (req, res) => {
   const project = await projectService.updateProject(req.params.projectId, req.body);
+  
+  await logActivity({
+    projectId: req.params.projectId,
+    userId: req.user._id,
+    type: 'PROJECT_UPDATED',
+    description: `Updated project settings`,
+  });
+
   success(res, { project });
 });
 
@@ -80,6 +89,14 @@ exports.removeCollaborator = asyncHandler(async (req, res) => {
     req.params.projectId,
     req.params.userId
   );
+
+  await logActivity({
+    projectId: req.params.projectId,
+    userId: req.user._id,
+    type: 'MEMBER_REMOVED',
+    description: `Removed a member from the project`,
+  });
+
   success(res, { project });
 });
 
@@ -106,6 +123,14 @@ exports.getRecommendedProjects = asyncHandler(async (req, res) => {
 // ── Finish project ────────────────────────────────────────────────────────────
 exports.finishProject = asyncHandler(async (req, res) => {
   const result = await projectService.finishProject(req.params.projectId, req.user._id);
+  
+  await logActivity({
+    projectId: req.params.projectId,
+    userId: req.user._id,
+    type: 'PROJECT_FINISHED',
+    description: `Marked project as completed!`,
+  });
+
   success(res, result);
 });
 
@@ -125,4 +150,9 @@ exports.submitRating = asyncHandler(async (req, res) => {
 exports.getRatings = asyncHandler(async (req, res) => {
   const result = await ratingService.getRatings(req.params.projectId, req.user._id);
   success(res, result);
+});
+
+exports.getActivities = asyncHandler(async (req, res) => {
+  const activities = await getActivitiesByProject(req.params.projectId, req.query);
+  success(res, { activities });
 });
