@@ -30,7 +30,7 @@ const searchUsers = async (query) => {
 
 const getUserById = async (userId, requesterId) => {
   const profile = await Profile.findOne({ userId })
-    .select(`${PROFILE_PUBLIC_SELECT} education experience links previousProjects popularProjects profileVisibility`)
+    .select(`${PROFILE_PUBLIC_SELECT} areasOfInterest education experience links previousProjects popularProjects performanceAnalytics profileVisibility`)
     .populate('userId', 'username')
     .populate('previousProjects', 'title status type')
     .populate('popularProjects', 'title status type')

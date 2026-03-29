@@ -1,14 +1,19 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useNotifications, useMarkAllRead, useMarkOneRead, useDeleteNotification } from '../hooks/useNotifications';
-import { MessageSquare, FolderKanban, Users, Sparkles, Bell, CheckCircle2, Check, X } from 'lucide-react';
+import {
+  MessageSquare, FolderKanban, Users, Sparkles, Bell, CheckCircle2, Check, X,
+  AlertTriangle, Globe, MapPin, Briefcase, GraduationCap, Github, Linkedin,
+  Twitter, ExternalLink, UserPlus, Award, Activity, Search
+} from 'lucide-react';
 import { cn } from '../utils/cn';
 import { useNotification } from '../context/NotificationContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as friendService from '../services/friendship.service';
 import * as userService from '../services/user.service';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { ReportModal } from '../components/modals/ReportModal';
+
 const getNotifIcon = (type) => {
   switch (type) {
     case 'message': return <MessageSquare className="w-5 h-5 text-blue-500" />;
@@ -694,13 +699,15 @@ export const ProfilePage = () => {
   );
 };
 
-import { useParams } from 'react-router-dom';
-import { ReportModal } from '../components/modals/ReportModal';
-import { AlertTriangle, Globe } from 'lucide-react';
+
 
 export const UserProfilePage = () => {
   const { userId } = useParams();
+  const navigate = useNavigate();
   const [isReportOpen, setIsReportOpen] = React.useState(false);
+  const { user: currentUser } = useAuth();
+  const { addToast } = useNotification();
+  const qc = useQueryClient();
 
   const { data: userData, isLoading, isError } = useQuery({
     queryKey: ['user', userId],
@@ -708,8 +715,18 @@ export const UserProfilePage = () => {
     enabled: !!userId,
   });
 
+  const sendRequestMutation = useMutation({
+    mutationFn: (id) => friendService.sendRequest(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['friends', 'outgoing'] });
+      addToast('Friend request sent!', 'success');
+    },
+    onError: (err) => addToast(err.response?.data?.error || 'Failed to send request', 'error')
+  });
+
   const profile = userData?.data?.profile;
   const user = profile?.userId;
+  const isSelf = currentUser?._id === user?._id;
 
   if (isLoading) return (
     <div className="max-w-4xl mx-auto h-full flex flex-col p-8">
@@ -726,9 +743,13 @@ export const UserProfilePage = () => {
   );
 
   return (
-    <div className="max-w-4xl mx-auto h-full flex flex-col gap-6 pb-12">
+    <div className="max-w-5xl mx-auto h-full flex flex-col gap-8 pb-16">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-surface-900">{user.username}'s Profile</h1>
+        <div className="flex items-center gap-2 text-surface-500">
+          <Link to="/friends" className="hover:text-primary-600 transition-colors">Users</Link>
+          <span>/</span>
+          <span className="font-bold text-surface-900">{user.username}</span>
+        </div>
         <button
           onClick={() => setIsReportOpen(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-200"
@@ -739,63 +760,237 @@ export const UserProfilePage = () => {
       </div>
 
       {!profile ? (
-        <div className="bg-white rounded-2xl border border-surface-200 p-8 shadow-sm text-center">
-          <p className="text-surface-500">This user hasn't set up their profile yet.</p>
+        <div className="bg-white rounded-2xl border border-surface-200 p-12 shadow-sm text-center">
+          <div className="w-20 h-20 bg-surface-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Search className="w-10 h-10 text-surface-300" />
+          </div>
+          <h2 className="text-xl font-bold text-surface-900 mb-2">Private Profile</h2>
+          <p className="text-surface-500">This user hasn't set up their public profile yet.</p>
         </div>
       ) : (
-        <>
-          {/* Header Card */}
-          <div className="bg-white rounded-2xl border border-surface-200 p-8 shadow-sm">
-            <div className="flex items-start gap-6">
-              <div className="w-20 h-20 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 text-2xl font-bold shrink-0">
-                {profile.profilePicture
-                  ? <img src={profile.profilePicture} alt="Profile" className="w-20 h-20 rounded-full object-cover" />
-                  : (profile.name?.[0] || '?').toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <h2 className="text-xl font-bold text-surface-900">{profile.name || user.username}</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* LEFT COLUMN: Main Profile Info */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* 1. Header Card */}
+            <div className="bg-white rounded-2xl border border-surface-200 p-8 shadow-sm">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-8">
+                <div className="w-32 h-32 rounded-full bg-primary-100 ring-4 ring-primary-50 flex items-center justify-center text-primary-700 text-4xl font-black shrink-0 shadow-lg overflow-hidden">
+                  {profile.profilePicture
+                    ? <img src={profile.profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                    : (profile.name?.[0] || user.username?.[0] || '?').toUpperCase()}
                 </div>
-                {profile.header && <p className="text-surface-600 mt-1">{profile.header}</p>}
-                {profile.location && <p className="text-sm text-surface-500 mt-1">📍 {profile.location}</p>}
-                {profile.description && <p className="text-surface-600 mt-3 leading-relaxed">{profile.description}</p>}
+
+                <div className="flex-1 text-center sm:text-left min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                    <div>
+                      <h2 className="text-3xl font-black text-surface-900 tracking-tight">{profile.name || user.username}</h2>
+                      {profile.header && <p className="text-lg font-medium text-primary-600 mt-1">{profile.header}</p>}
+                    </div>
+
+                    {!isSelf && (
+                      <div className="flex items-center gap-3 shrink-0">
+                        <button
+                          onClick={() => sendRequestMutation.mutate(user._id)}
+                          disabled={sendRequestMutation.isLoading}
+                          className="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 transition-all shadow-md shadow-primary-200 active:scale-95 disabled:opacity-50"
+                        >
+                          <UserPlus className="w-4 h-4" />
+                          Add Friend
+                        </button>
+                        <Link
+                          to={`/chat?user=${user._id}`}
+                          className="flex items-center gap-2 px-5 py-2.5 bg-white border-2 border-surface-200 text-surface-900 font-bold rounded-xl hover:bg-surface-50 transition-all active:scale-95"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                          Message
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap justify-center sm:justify-start gap-4 text-sm font-medium text-surface-500 mb-6">
+                    {profile.location && (
+                      <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-primary-500" /> {profile.location}</span>
+                    )}
+                    {profile.website && (
+                      <a href={profile.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-primary-600 hover:underline">
+                        <Globe className="w-4 h-4" /> Website
+                      </a>
+                    )}
+                  </div>
+
+                  {profile.description && (
+                    <div className="relative">
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-100 rounded-full" />
+                      <p className="pl-6 text-surface-600 text-base leading-relaxed italic">
+                        "{profile.description}"
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Professional Stats Dashboard */}
+            <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
+              <div className="bg-gradient-to-br from-primary-600 to-primary-800 p-6 rounded-2xl text-white shadow-xl shadow-primary-200 relative overflow-hidden group">
+                <Award className="absolute -right-4 -bottom-4 w-32 h-32 text-white/10 group-hover:scale-110 transition-transform duration-500" />
+                <p className="text-sm font-bold text-primary-100 uppercase tracking-widest mb-1">Reputation Score</p>
+                <p className="text-4xl font-black">{profile.performanceAnalytics?.reputationScore || 0}</p>
+                <div className="mt-4 flex items-center gap-2 text-xs font-bold bg-white/10 w-fit px-3 py-1 rounded-full border border-white/20">
+                  <Activity className="w-3 h-3" /> Top Contributor
+                </div>
+              </div>
+
+              <div className="bg-white border border-surface-200 p-6 rounded-2xl shadow-sm relative overflow-hidden group">
+                <CheckCircle2 className="absolute -right-4 -bottom-4 w-32 h-32 text-surface-50 group-hover:scale-110 transition-transform duration-500" />
+                <p className="text-sm font-bold text-surface-400 uppercase tracking-widest mb-1">Impact Made</p>
+                <p className="text-4xl font-black text-surface-900">{profile.performanceAnalytics?.collaborationsCompleted || 0}</p>
+                <p className="text-sm font-bold text-surface-500 mt-2">Successful Collaborations</p>
+              </div>
+            </div>
+
+            {/* 3. Experience & Education Timeline */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Experience */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-black text-surface-900 flex items-center gap-2 uppercase tracking-tight">
+                  <Briefcase className="w-5 h-5 text-primary-500" /> Career Journey
+                </h3>
+                {profile.experience?.length > 0 ? (
+                  <div className="space-y-4">
+                    {profile.experience.map((exp, i) => (
+                      <div key={i} className="relative pl-6 border-l-2 border-surface-100 py-1">
+                        <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-primary-500" />
+                        <h4 className="font-bold text-surface-900 leading-tight">{exp.role}</h4>
+                        <p className="text-sm font-bold text-primary-600">{exp.company}</p>
+                        <p className="text-xs text-surface-500 mt-1">
+                          {new Date(exp.startDate).getFullYear()} - {exp.current ? 'Present' : new Date(exp.endDate).getFullYear()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm italic text-surface-400">No career history added.</p>
+                )}
+              </div>
+
+              {/* Education */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-black text-surface-900 flex items-center gap-2 uppercase tracking-tight">
+                  <GraduationCap className="w-5 h-5 text-primary-500" /> Education
+                </h3>
+                {profile.education?.length > 0 ? (
+                  <div className="space-y-4">
+                    {profile.education.map((edu, i) => (
+                      <div key={i} className="relative pl-6 border-l-2 border-surface-100 py-1">
+                        <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-surface-300" />
+                        <h4 className="font-bold text-surface-900 leading-tight">{edu.degree}</h4>
+                        <p className="text-sm font-medium text-surface-600">{edu.institution}</p>
+                        <p className="text-xs text-surface-500 mt-1">{edu.startYear} - {edu.endYear || 'Present'}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm italic text-surface-400">No educational background added.</p>
+                )}
+              </div>
+            </div>
+
+            {/* 4. Skills Cloud */}
+            <div className="bg-white rounded-2xl border border-surface-200 p-8 shadow-sm">
+              <h3 className="text-lg font-black text-surface-900 mb-6 uppercase tracking-tight">Technical Domain</h3>
+              <div className="flex flex-wrap gap-3">
+                {profile.skills?.length > 0 ? (
+                  profile.skills.map((s, i) => (
+                    <div key={i} className="group relative">
+                      <div className="px-4 py-2 bg-surface-50 text-surface-800 rounded-xl text-sm font-bold border border-surface-200 transition-all hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700">
+                        {s.name}
+                        <span className="ml-2 px-1.5 py-0.5 bg-white text-[10px] uppercase rounded-md border border-surface-100 group-hover:border-primary-200">{s.level}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-surface-400">No skills listed.</p>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Skills */}
-          {profile.skills?.length > 0 && (
+          {/* RIGHT COLUMN: Sidebar Items */}
+          <div className="space-y-8">
+            {/* Interests Section */}
             <div className="bg-white rounded-2xl border border-surface-200 p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-surface-700 mb-3 uppercase tracking-wider">Skills</h3>
+              <h3 className="text-sm font-black text-surface-900 mb-4 uppercase tracking-widest flex items-center gap-2">
+                <Activity className="w-4 h-4 text-primary-500" /> Areas of Passion
+              </h3>
               <div className="flex flex-wrap gap-2">
-                {profile.skills.map((s, i) => (
-                  <span key={i} className="px-3 py-1.5 bg-primary-50 text-primary-700 rounded-full text-sm font-medium border border-primary-200/60">
-                    {s.name}
-                    <span className="ml-1.5 text-xs text-primary-500 capitalize">· {s.level}</span>
-                  </span>
-                ))}
+                {profile.areasOfInterest?.length > 0 ? (
+                  profile.areasOfInterest.map((interest, i) => (
+                    <span key={i} className="px-3 py-1.5 bg-amber-50 text-amber-600 rounded-lg text-xs font-black uppercase tracking-tight border border-amber-100">
+                      {interest}
+                    </span>
+                  ))
+                ) : (
+                  <p className="text-xs text-surface-400 italic">No interests shared yet.</p>
+                )}
               </div>
             </div>
-          )}
 
-          {/* Projects */}
-          {userData.data?.projects?.length > 0 && (
+            {/* Social Links Section */}
             <div className="bg-white rounded-2xl border border-surface-200 p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-surface-700 mb-3 uppercase tracking-wider">Public Projects</h3>
-              <div className="grid sm:grid-cols-2 gap-4">
-                {userData.data.projects.map(p => (
-                  <Link key={p._id} to={`/projects/${p._id}`} className="block border border-surface-200 rounded-xl p-4 hover:border-primary-300 transition-colors">
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-bold text-surface-900 group-hover:text-primary-600">{p.title}</h4>
-                      <Globe className="w-4 h-4 text-surface-400" />
-                    </div>
-                    <p className="text-sm text-surface-600 line-clamp-2">{p.description}</p>
-                  </Link>
-                ))}
+              <h3 className="text-sm font-black text-surface-900 mb-4 uppercase tracking-widest">Connect Online</h3>
+              <div className="space-y-3">
+                {profile.links?.length > 0 ? (
+                  profile.links.map((link, i) => (
+                    <a
+                      key={link.platform + i}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between p-3 bg-surface-50 rounded-xl hover:bg-primary-50 hover:border-primary-200 border border-transparent transition-all group"
+                    >
+                      <div className="flex items-center gap-3">
+                        {link.platform === 'github' && <Github className="w-5 h-5 text-gray-900" />}
+                        {link.platform === 'linkedin' && <Linkedin className="w-5 h-5 text-blue-600" />}
+                        {link.platform === 'twitter' && <Twitter className="w-5 h-5 text-sky-500" />}
+                        {link.platform === 'portfolio' && <Globe className="w-5 h-5 text-primary-600" />}
+                        {link.platform === 'other' && <ExternalLink className="w-5 h-5 text-surface-500" />}
+                        <span className="text-sm font-bold text-surface-700 group-hover:text-primary-700 capitalize">{link.platform}</span>
+                      </div>
+                      <ExternalLink className="w-4 h-4 text-surface-300 group-hover:text-primary-400" />
+                    </a>
+                  ))
+                ) : (
+                  <p className="text-xs text-surface-400 italic">No social profiles linked.</p>
+                )}
               </div>
             </div>
-          )}
-        </>
+
+            {/* Projects Showcase */}
+            <div className="bg-white rounded-2xl border border-surface-200 p-6 shadow-sm">
+              <h3 className="text-sm font-black text-surface-900 mb-4 uppercase tracking-widest flex items-center justify-between">
+                Public Projects
+                <span className="text-[10px] bg-surface-100 px-2 py-1 rounded text-surface-500">{userData.data?.projects?.length || 0}</span>
+              </h3>
+              <div className="space-y-3">
+                {userData.data?.projects?.length > 0 ? (
+                  userData.data.projects.map(p => (
+                    <Link key={p._id} to={`/projects/${p._id}`} className="block p-3 bg-white border border-surface-100 rounded-xl hover:border-primary-200 hover:shadow-md transition-all group">
+                      <div className="flex justify-between items-center mb-1">
+                        <h4 className="font-bold text-surface-900 group-hover:text-primary-600 text-sm truncate pr-2">{p.title}</h4>
+                        <button className="p-1 rounded bg-surface-50 text-surface-400 group-hover:text-primary-500"><ExternalLink className="w-3 h-3" /></button>
+                      </div>
+                      <p className="text-[11px] text-surface-500 font-medium">{p.type} Project · {p.status}</p>
+                    </Link>
+                  ))
+                ) : (
+                  <p className="text-xs text-surface-400 italic">No public projects revealed.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Report Modal */}
