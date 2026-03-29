@@ -18,6 +18,7 @@ const Recommendation = require('./Recommendation.model');
 const SkillVector   = require('./SkillVector.model');
 const SkillMatchScore = require('./SkillMatchScore.model');
 const Rating        = require('./Rating.model');
+const Report        = require('./Report.model');
 
 module.exports = {
   User,
@@ -31,4 +32,5 @@ module.exports = {
   SkillVector,
   SkillMatchScore,
   Rating,
+  Report,
 };

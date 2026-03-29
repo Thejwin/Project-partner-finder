@@ -3,6 +3,7 @@ export { ProjectsPage } from './ProjectsPage.jsx';
 export { ProjectWorkspacePage } from './ProjectWorkspacePage.jsx';
 export { TaskBoardPage } from './TaskBoardPage.jsx';
 export { ChatPage } from './ChatPage.jsx';
+export { AdminDashboardPage } from './AdminDashboardPage.jsx';
 
 // Placeholders implemented in index.jsx just for scaffolding
 export * from './index.jsx';

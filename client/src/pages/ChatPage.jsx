@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSocketEvent, useSocket } from '../context/SocketContext';
 import { useChatStore } from '../store/useChatStore';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Search, Send, FileImage, MoreVertical, MessageSquare, Plus } from 'lucide-react';
 import { useNotification } from '../context/NotificationContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -246,15 +246,24 @@ export const ChatPage = () => {
               >
                 &larr;
               </button>
-              <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center font-bold text-primary-700">
-                {conversations.find(c => c.friendshipId === friendshipId)?.friend?.avatar || '?'}
-              </div>
-              <div>
-                <h3 className="font-bold text-surface-900 leading-tight">
-                  {conversations.find(c => c.friendshipId === friendshipId)?.friend?.username || 'Unknown'}
-                </h3>
-                <p className="text-xs text-green-600 font-medium">Online</p>
-              </div>
+              <Link 
+                to={`/users/${conversations.find(c => c.friendshipId === friendshipId)?.friend?._id}`}
+                className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+              >
+                <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center font-bold text-primary-700 overflow-hidden">
+                  {conversations.find(c => c.friendshipId === friendshipId)?.friend?.profilePicture ? (
+                    <img src={conversations.find(c => c.friendshipId === friendshipId)?.friend?.profilePicture} className="w-full h-full object-cover" />
+                  ) : (
+                    conversations.find(c => c.friendshipId === friendshipId)?.friend?.username?.substring(0, 2).toUpperCase() || '?'
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-bold text-surface-900 leading-tight">
+                    {conversations.find(c => c.friendshipId === friendshipId)?.friend?.username || 'Unknown'}
+                  </h3>
+                  <p className="text-xs text-green-600 font-medium">Online</p>
+                </div>
+              </Link>
             </div>
             <button 
               onClick={() => addToast('More options coming soon!', 'info')}

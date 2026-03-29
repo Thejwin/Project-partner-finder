@@ -37,9 +37,20 @@ const userSchema = new Schema(
       default: null,
     },
 
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
+    },
+
     isActive: {
       type: Boolean,
       default: true,
+    },
+
+    bannedReason: {
+      type: String,
+      default: null,
     },
 
     termsAccepted: {

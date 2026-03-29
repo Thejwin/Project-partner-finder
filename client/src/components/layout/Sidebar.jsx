@@ -1,8 +1,11 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, FolderKanban, MessageSquare, Users, UserCircle } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, MessageSquare, Users, UserCircle, ShieldAlert } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { useAuth } from '../../context/AuthContext';
 
 export const Sidebar = ({ className }) => {
+  const { user } = useAuth();
+  
   const links = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/projects', icon: FolderKanban, label: 'Projects' },
@@ -10,6 +13,10 @@ export const Sidebar = ({ className }) => {
     { to: '/friends', icon: Users, label: 'Friends' },
     { to: '/profile', icon: UserCircle, label: 'Profile' },
   ];
+
+  if (user?.role === 'admin') {
+    links.push({ to: '/admin', icon: ShieldAlert, label: 'Admin Panel' });
+  }
 
   return (
     <aside className={cn("bg-white border-r border-surface-200 flex flex-col", className)}>

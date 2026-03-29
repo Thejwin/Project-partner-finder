@@ -6,7 +6,9 @@ import { cn } from '../utils/cn';
 import { useNotification } from '../context/NotificationContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as friendService from '../services/friendship.service';
-
+import * as userService from '../services/user.service';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 const getNotifIcon = (type) => {
   switch (type) {
     case 'message': return <MessageSquare className="w-5 h-5 text-blue-500" />;
@@ -692,21 +694,120 @@ export const ProfilePage = () => {
   );
 };
 
+import { useParams } from 'react-router-dom';
+import { ReportModal } from '../components/modals/ReportModal';
+import { AlertTriangle, Globe } from 'lucide-react';
+
 export const UserProfilePage = () => {
+  const { userId } = useParams();
+  const [isReportOpen, setIsReportOpen] = React.useState(false);
+
+  const { data: userData, isLoading, isError } = useQuery({
+    queryKey: ['user', userId],
+    queryFn: () => userService.getUserById(userId),
+    enabled: !!userId,
+  });
+
+  const profile = userData?.data?.profile;
+  const user = profile?.userId;
+
+  if (isLoading) return (
+    <div className="max-w-4xl mx-auto h-full flex flex-col p-8">
+      <div className="h-32 bg-surface-100 rounded-xl animate-pulse mb-6"></div>
+      <div className="h-64 bg-surface-100 rounded-xl animate-pulse"></div>
+    </div>
+  );
+
+  if (isError || !user) return (
+    <div className="max-w-4xl mx-auto h-full flex flex-col p-8 items-center text-center">
+      <h1 className="text-2xl font-bold text-surface-900 mb-2">User Not Found</h1>
+      <p className="text-surface-500">The user you are looking for does not exist or has been removed.</p>
+    </div>
+  );
+
   return (
-    <div className="max-w-4xl mx-auto h-full flex flex-col">
-      <h1 className="text-2xl font-bold text-surface-900 mb-8">User Profile</h1>
-      <div className="bg-white rounded-2xl border border-surface-200 p-8 shadow-sm">
-        <p className="text-surface-500">Public profile view.</p>
+    <div className="max-w-4xl mx-auto h-full flex flex-col gap-6 pb-12">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-surface-900">{user.username}'s Profile</h1>
+        <button 
+          onClick={() => setIsReportOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-200"
+        >
+          <AlertTriangle className="w-4 h-4" />
+          Report
+        </button>
       </div>
+
+      {!profile ? (
+        <div className="bg-white rounded-2xl border border-surface-200 p-8 shadow-sm text-center">
+          <p className="text-surface-500">This user hasn't set up their profile yet.</p>
+        </div>
+      ) : (
+        <>
+          {/* Header Card */}
+          <div className="bg-white rounded-2xl border border-surface-200 p-8 shadow-sm">
+            <div className="flex items-start gap-6">
+              <div className="w-20 h-20 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 text-2xl font-bold shrink-0">
+                {profile.profilePicture 
+                  ? <img src={profile.profilePicture} alt="Profile" className="w-20 h-20 rounded-full object-cover" /> 
+                  : (profile.name?.[0] || '?').toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h2 className="text-xl font-bold text-surface-900">{profile.name || user.username}</h2>
+                </div>
+                {profile.header && <p className="text-surface-600 mt-1">{profile.header}</p>}
+                {profile.location && <p className="text-sm text-surface-500 mt-1">📍 {profile.location}</p>}
+                {profile.description && <p className="text-surface-600 mt-3 leading-relaxed">{profile.description}</p>}
+              </div>
+            </div>
+          </div>
+
+          {/* Skills */}
+          {profile.skills?.length > 0 && (
+            <div className="bg-white rounded-2xl border border-surface-200 p-6 shadow-sm">
+              <h3 className="text-sm font-semibold text-surface-700 mb-3 uppercase tracking-wider">Skills</h3>
+              <div className="flex flex-wrap gap-2">
+                {profile.skills.map((s, i) => (
+                  <span key={i} className="px-3 py-1.5 bg-primary-50 text-primary-700 rounded-full text-sm font-medium border border-primary-200/60">
+                    {s.name}
+                    <span className="ml-1.5 text-xs text-primary-500 capitalize">· {s.level}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Projects */}
+          {userData.data?.projects?.length > 0 && (
+            <div className="bg-white rounded-2xl border border-surface-200 p-6 shadow-sm">
+              <h3 className="text-sm font-semibold text-surface-700 mb-3 uppercase tracking-wider">Public Projects</h3>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {userData.data.projects.map(p => (
+                  <Link key={p._id} to={`/projects/${p._id}`} className="block border border-surface-200 rounded-xl p-4 hover:border-primary-300 transition-colors">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-bold text-surface-900 group-hover:text-primary-600">{p.title}</h4>
+                      <Globe className="w-4 h-4 text-surface-400" />
+                    </div>
+                    <p className="text-sm text-surface-600 line-clamp-2">{p.description}</p>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Report Modal */}
+      <ReportModal 
+        isOpen={isReportOpen} 
+        onClose={() => setIsReportOpen(false)} 
+        reportedUserId={user._id}
+        title={`User: ${user.username}`}
+      />
     </div>
   );
 };
-
-import * as userService from '../services/user.service';
-import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-
 export const FriendsPage = () => {
 
   const [activeTab, setActiveTab] = React.useState('friends'); // friends, incoming, outgoing, search
@@ -826,11 +927,13 @@ export const FriendsPage = () => {
                     const partnerName = partner.username || 'Unknown User';
                     return (
                       <div key={f.friendshipId} className="border border-surface-200 p-4 rounded-xl flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center font-bold text-primary-700 shrink-0">
+                        <Link to={`/users/${partner._id}`} className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center font-bold text-primary-700 shrink-0 hover:opacity-80 transition-opacity">
                           {partnerName.substring(0, 2).toUpperCase()}
-                        </div>
+                        </Link>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-surface-900 truncate">{partnerName}</h4>
+                          <Link to={`/users/${partner._id}`} className="block font-semibold text-surface-900 truncate hover:text-primary-600 transition-colors">
+                            {partnerName}
+                          </Link>
                           <p className="text-xs text-surface-500 truncate">Friends since {new Date(f.since).toLocaleDateString()}</p>
                         </div>
                         <div className="flex gap-2 shrink-0">
@@ -868,11 +971,13 @@ export const FriendsPage = () => {
                     return (
                       <div key={req._id} className="border border-surface-200 p-4 rounded-xl flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center font-bold text-primary-700">
+                          <Link to={`/users/${req.requester?._id}`} className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center font-bold text-primary-700 hover:opacity-80 transition-opacity shrink-0">
                             {requesterName.substring(0, 2).toUpperCase()}
-                          </div>
+                          </Link>
                           <div>
-                            <h4 className="font-semibold text-surface-900">{requesterName}</h4>
+                            <Link to={`/users/${req.requester?._id}`} className="block font-semibold text-surface-900 hover:text-primary-600 transition-colors">
+                              {requesterName}
+                            </Link>
                             <p className="text-xs text-surface-500">Wants to connect</p>
                           </div>
                         </div>
@@ -900,11 +1005,13 @@ export const FriendsPage = () => {
                     return (
                       <div key={req._id} className="border border-surface-200 p-4 rounded-xl flex items-center justify-between opacity-70">
                         <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-full bg-surface-200 flex items-center justify-center font-bold text-surface-600">
+                          <Link to={`/users/${req.recipient?._id}`} className="w-10 h-10 rounded-full bg-surface-200 flex items-center justify-center font-bold text-surface-600 hover:opacity-80 transition-opacity shrink-0">
                             {recipientName.substring(0, 2).toUpperCase()}
-                          </div>
+                          </Link>
                           <div>
-                            <h4 className="font-semibold text-surface-900">{recipientName}</h4>
+                            <Link to={`/users/${req.recipient?._id}`} className="block font-semibold text-surface-900 hover:text-primary-600 transition-colors">
+                              {recipientName}
+                            </Link>
                             <p className="text-xs text-surface-500">Pending response...</p>
                           </div>
                         </div>
@@ -952,11 +1059,13 @@ export const FriendsPage = () => {
                   return (
                     <div key={profile._id} className="border border-surface-200 p-4 rounded-xl flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-surface-200 flex items-center justify-center font-bold text-surface-600">
+                        <Link to={`/users/${actualUserId}`} className="w-10 h-10 rounded-full bg-surface-200 flex items-center justify-center font-bold text-surface-600 hover:opacity-80 transition-opacity shrink-0">
                           {username.substring(0, 2).toUpperCase()}
-                        </div>
+                        </Link>
                         <div>
-                          <h4 className="font-semibold text-surface-900">{username}</h4>
+                          <Link to={`/users/${actualUserId}`} className="block font-semibold text-surface-900 hover:text-primary-600 transition-colors">
+                            {username}
+                          </Link>
                         </div>
                       </div>
 

@@ -268,11 +268,13 @@ export const ProjectWorkspacePage = () => {
                         return (
                           <div key={searchUser._id} className="flex items-center justify-between p-4 bg-white hover:bg-surface-50 transition-colors">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center font-bold text-primary-700">
+                              <Link to={`/users/${searchUser.userId._id}`} className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center font-bold text-primary-700 hover:opacity-80 transition-opacity shrink-0">
                                 {searchUser.userId.username[0].toUpperCase()}
-                              </div>
+                              </Link>
                               <div>
-                                <p className="text-sm font-bold text-surface-900">{searchUser.userId.username}</p>
+                                <Link to={`/users/${searchUser.userId._id}`} className="text-sm font-bold text-surface-900 hover:text-primary-600 transition-colors">
+                                  {searchUser.userId.username}
+                                </Link>
                                 <p className="text-xs text-surface-500">{searchUser.skills?.slice(0, 3).join(', ')}</p>
                               </div>
                             </div>
@@ -311,11 +313,13 @@ export const ProjectWorkspacePage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Owner */}
               <div className="flex items-center gap-4 p-4 rounded-xl border border-primary-200 bg-primary-50/50">
-                <div className="w-12 h-12 bg-primary-200 rounded-full flex items-center justify-center font-bold text-primary-700 text-lg">
+                <Link to={`/users/${project.ownerId?._id}`} className="w-12 h-12 bg-primary-200 rounded-full flex items-center justify-center font-bold text-primary-700 text-lg hover:opacity-80 transition-opacity shrink-0">
                   {project.ownerId?.username?.[0]?.toUpperCase() || 'O'}
-                </div>
+                </Link>
                 <div>
-                  <p className="font-bold text-surface-900">{project.ownerId?.username || 'Project Owner'}</p>
+                  <Link to={`/users/${project.ownerId?._id}`} className="font-bold text-surface-900 hover:text-primary-600 transition-colors">
+                    {project.ownerId?.username || 'Project Owner'}
+                  </Link>
                   <p className="text-xs text-primary-700 font-medium tracking-wide uppercase mt-0.5">Owner</p>
                 </div>
               </div>
@@ -323,11 +327,13 @@ export const ProjectWorkspacePage = () => {
               {/* Members */}
               {project.collaborators.map((c, i) => (
                 <div key={c._id || i} className="flex items-center gap-4 p-4 rounded-xl border border-surface-200 bg-white shadow-sm">
-                  <div className="w-12 h-12 bg-surface-200 rounded-full flex items-center justify-center font-bold text-surface-600 text-lg">
+                  <Link to={`/users/${c._id}`} className="w-12 h-12 bg-surface-200 rounded-full flex items-center justify-center font-bold text-surface-600 text-lg hover:opacity-80 transition-opacity shrink-0">
                     {c.username?.[0]?.toUpperCase() || '?'}
-                  </div>
+                  </Link>
                   <div>
-                    <p className="font-bold text-surface-900">{c.username || 'Collaborator'}</p>
+                    <Link to={`/users/${c._id}`} className="font-bold text-surface-900 hover:text-primary-600 transition-colors">
+                      {c.username || 'Collaborator'}
+                    </Link>
                     <p className="text-xs text-surface-500 font-medium tracking-wide uppercase mt-0.5">Member</p>
                   </div>
                 </div>

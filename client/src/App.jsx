@@ -25,6 +25,7 @@ import {
   ProfilePage,
   UserProfilePage,
   FriendsPage,
+  AdminDashboardPage,
 } from './pages';
 
 function App() {
@@ -50,6 +51,7 @@ function App() {
                     <Route path="/chat/:friendshipId" element={<ChatPage />} />
                     <Route path="/notifications" element={<NotificationsPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/admin" element={<AdminDashboardPage />} />
                     <Route path="/users/:userId" element={<UserProfilePage />} />
                     <Route path="/friends" element={<FriendsPage />} />
                   </Route>

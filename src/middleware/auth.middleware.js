@@ -19,12 +19,12 @@ const protect = async (req, res, next) => {
     const payload = verifyAccessToken(token);
 
     // Lightweight DB check — ensures user still exists and is active
-    const user = await User.findById(payload._id).select('_id username isActive').lean();
+    const user = await User.findById(payload._id).select('_id username isActive role').lean();
     if (!user || !user.isActive) {
       return error(res, 'User not found or deactivated', 401);
     }
 
-    req.user = { _id: user._id.toString(), username: user.username };
+    req.user = { _id: user._id.toString(), username: user.username, role: user.role };
     return next();
   } catch (err) {
     if (err.name === 'TokenExpiredError') {
@@ -34,4 +34,11 @@ const protect = async (req, res, next) => {
   }
 };
 
-module.exports = { protect };
+const requireAdmin = async (req, res, next) => {
+  if (!req.user || req.user.role !== 'admin') {
+    return error(res, 'Forbidden. Admin access required.', 403);
+  }
+  return next();
+};
+
+module.exports = { protect, requireAdmin };
