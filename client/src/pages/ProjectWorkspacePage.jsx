@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom';
-import { useProjectDetails, useProposals, useRespondToProposal, useAddCollaborator } from '../hooks/useProjects';
+import { useProjectDetails, useProposals, useRespondToProposal, useAddCollaborator, useFinishProject, useLeaveProject } from '../hooks/useProjects';
 import { useProjectStore } from '../store/useProjectStore';
-import { Users, LayoutTemplate, Sparkles, FolderKanban, Settings, Search, UserPlus, X } from 'lucide-react';
+import { Users, LayoutTemplate, Sparkles, FolderKanban, Settings, Search, UserPlus, X, CheckCircle2, Star, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
@@ -9,6 +9,7 @@ import { projectService, userService } from '../services';
 import { cn } from '../utils/cn';
 import { useState, useEffect } from 'react';
 import { EditProjectModal } from '../components/project/EditProjectModal';
+import { RateMembersModal } from '../components/project/RateMembersModal';
 
 export const ProjectWorkspacePage = () => {
   const { projectId } = useParams();
@@ -22,12 +23,19 @@ export const ProjectWorkspacePage = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isRateModalOpen, setIsRateModalOpen] = useState(false);
+  const [showFinishConfirm, setShowFinishConfirm] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
   // Fix isOwner logic - ensure we use user?._id and compare strings
   const isOwner = data?.data?.project?.ownerId?._id === user?._id || data?.data?.project?.ownerId === user?._id;
   const { data: proposalsData, isLoading: isLoadingProposals } = useProposals(isOwner ? projectId : null);
   const { mutate: respondToProposal, isLoading: isResponding } = useRespondToProposal(projectId);
   const { mutate: addMember, isLoading: isAddingMember } = useAddCollaborator(projectId);
+  const { mutate: finishProject, isLoading: isFinishing } = useFinishProject(projectId);
+  const { mutate: leaveProject, isLoading: isLeaving } = useLeaveProject(projectId);
+
+  const isMember = data?.data?.project?.collaborators?.some(c => c._id === user?._id) || isOwner;
 
   // Search users effect
   useEffect(() => {
@@ -99,8 +107,51 @@ export const ProjectWorkspacePage = () => {
                 Settings
               </button>
             )}
+
+            {/* Finish Project — owner only, not yet completed */}
+            {isOwner && project.status !== 'completed' && project.status !== 'closed' && (
+              <button
+                onClick={() => setShowFinishConfirm(true)}
+                disabled={isFinishing}
+                className="flex items-center gap-2 bg-green-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-green-700 transition-colors w-full justify-center shadow-sm shadow-green-600/20 disabled:opacity-50"
+              >
+                <CheckCircle2 className="w-5 h-5" />
+                {isFinishing ? 'Finishing...' : 'Finish Project'}
+              </button>
+            )}
+
+            {/* Rate Members — all members, only when completed */}
+            {project.status === 'completed' && isMember && (
+              <button
+                onClick={() => setIsRateModalOpen(true)}
+                className="flex items-center gap-2 bg-amber-500 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-amber-600 transition-colors w-full justify-center shadow-sm shadow-amber-500/20"
+              >
+                <Star className="w-5 h-5" />
+                Rate Members
+              </button>
+            )}
+
+            {/* Completed badge */}
+            {project.status === 'completed' && (
+              <span className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg font-semibold text-sm border border-green-200 w-full justify-center">
+                <CheckCircle2 className="w-4 h-4" />
+                Completed
+              </span>
+            )}
             
-            {project.ownerId._id !== user._id && !project.collaborators.some(c => c._id === user._id) && (
+            {/* Leave Project — member only (not owner), not completed or closed */}
+            {!isOwner && isMember && project.status !== 'completed' && project.status !== 'closed' && (
+              <button 
+                onClick={() => setShowLeaveConfirm(true)}
+                disabled={isLeaving}
+                className="flex items-center gap-2 bg-red-50 text-red-600 px-5 py-2.5 rounded-lg font-medium hover:bg-red-100 transition-colors w-full justify-center border border-red-200 shadow-sm disabled:opacity-50"
+              >
+                <LogOut className="w-5 h-5" />
+                {isLeaving ? 'Leaving...' : 'Leave Project'}
+              </button>
+            )}
+
+            {project.ownerId._id !== user._id && !project.collaborators.some(c => c._id === user._id) && project.status !== 'completed' && project.status !== 'closed' && (
               <button 
                 onClick={async () => {
                   try {
@@ -368,6 +419,98 @@ export const ProjectWorkspacePage = () => {
         onClose={() => setIsEditModalOpen(false)} 
         project={project} 
       />
+
+      <RateMembersModal
+        isOpen={isRateModalOpen}
+        onClose={() => setIsRateModalOpen(false)}
+        projectId={projectId}
+      />
+
+      {/* Finish project confirmation dialog */}
+      {showFinishConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-surface-900/40 backdrop-blur-sm" onClick={() => setShowFinishConfirm(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate-in fade-in zoom-in duration-200">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="w-8 h-8 text-green-600" />
+              </div>
+              <h3 className="text-xl font-bold text-surface-900 mb-2">Finish Project?</h3>
+              <p className="text-surface-500 mb-6">
+                This will mark the project as <strong>completed</strong> and increment the collaboration count for all members. Team members will be able to rate each other.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowFinishConfirm(false)}
+                  className="flex-1 px-4 py-2.5 bg-white border border-surface-200 text-surface-700 rounded-lg font-medium hover:bg-surface-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={isFinishing}
+                  onClick={() => {
+                    finishProject(undefined, {
+                      onSuccess: () => {
+                        addToast('Project completed! Members can now rate each other.', 'success');
+                        setShowFinishConfirm(false);
+                      },
+                      onError: (err) => {
+                        addToast(err.response?.data?.error || 'Failed to finish project', 'error');
+                      },
+                    });
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 shadow-sm shadow-green-600/20"
+                >
+                  {isFinishing ? 'Finishing...' : 'Yes, Complete It'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Leave project confirmation dialog */}
+      {showLeaveConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-surface-900/40 backdrop-blur-sm" onClick={() => setShowLeaveConfirm(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate-in fade-in zoom-in duration-200">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <LogOut className="w-8 h-8 text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-surface-900 mb-2">Leave Project?</h3>
+              <p className="text-surface-500 mb-6">
+                Are you sure you want to leave <strong>{project.title}</strong>? You will no longer have access to the task board or be listed as a collaborator.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowLeaveConfirm(false)}
+                  className="flex-1 px-4 py-2.5 bg-white border border-surface-200 text-surface-700 rounded-lg font-medium hover:bg-surface-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={isLeaving}
+                  onClick={() => {
+                    leaveProject(undefined, {
+                      onSuccess: () => {
+                        addToast('You have left the project.', 'success');
+                        setShowLeaveConfirm(false);
+                      },
+                      onError: (err) => {
+                        addToast(err.response?.data?.error || 'Failed to leave project', 'error');
+                      },
+                    });
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 shadow-sm shadow-red-600/20"
+                >
+                  {isLeaving ? 'Leaving...' : 'Yes, Leave'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

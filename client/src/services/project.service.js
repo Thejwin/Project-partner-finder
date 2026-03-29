@@ -78,3 +78,25 @@ export const addCollaborator = async ({ projectId, userId }) => {
   const res = await api.post(`/projects/${projectId}/membership/add/${userId}`);
   return res.data;
 };
+
+export const leaveProject = async (projectId) => {
+  const res = await api.delete(`/projects/${projectId}/membership/leave`);
+  return res.data;
+};
+
+// Finish project
+export const finishProject = async (projectId) => {
+  const res = await api.patch(`/projects/${projectId}/finish`);
+  return res.data;
+};
+
+// Ratings
+export const getRatings = async (projectId) => {
+  const res = await api.get(`/projects/${projectId}/ratings`);
+  return res.data;
+};
+
+export const submitRating = async ({ projectId, rateeId, score, comment }) => {
+  const res = await api.post(`/projects/${projectId}/ratings`, { rateeId, score, comment });
+  return res.data;
+};

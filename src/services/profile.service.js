@@ -24,6 +24,13 @@ const updateProfile = async (userId, data) => {
     { new: true, runValidators: true }
   ).select(PRIVATE_FIELDS);
   if (!profile) throw AppError('Profile not found', 404);
+
+  // Async integration: ensure AI embeddings exist for the new skills
+  if (data.skills && data.skills.length > 0) {
+    const skillNames = data.skills.map((s) => s.name);
+    nlpService.ensureSkillVectors(skillNames).catch(console.error);
+  }
+
   return profile;
 };
 

@@ -155,6 +155,59 @@ const deleteProject = async (projectId) => {
   return { message: 'Project deleted' };
 };
 
+// ── Finish (complete) ─────────────────────────────────────────────────────────
+const finishProject = async (projectId, userId) => {
+  const project = await Project.findById(projectId)
+    .select('ownerId collaborators status title')
+    .lean();
+
+  if (!project) throw AppError('Project not found', 404);
+  if (project.ownerId.toString() !== userId) {
+    throw AppError('Only the project owner can finish a project', 403);
+  }
+  if (project.status === 'completed') {
+    throw AppError('Project is already completed', 422);
+  }
+  if (project.status === 'closed') {
+    throw AppError('Cannot finish a closed project', 422);
+  }
+
+  // Transition to completed
+  await Project.findByIdAndUpdate(projectId, { $set: { status: 'completed' } });
+
+  // All member user IDs (owner + collaborators)
+  const allMemberIds = [
+    project.ownerId,
+    ...project.collaborators,
+  ];
+
+  // Increment collaborationsCompleted for every member
+  const { Profile, Notification } = require('../models');
+  await Profile.updateMany(
+    { userId: { $in: allMemberIds } },
+    { $inc: { 'performanceAnalytics.collaborationsCompleted': 1 } }
+  );
+
+  // Notify all collaborators
+  const { getIO, ROOMS, EVENTS } = require('../config/socket');
+  const emit = (room, event, payload) => {
+    try { getIO().to(room).emit(event, payload); } catch (_) {}
+  };
+
+  for (const collabId of project.collaborators) {
+    await Notification.create({
+      userId: collabId,
+      type: 'system',
+      referenceId: projectId,
+      referenceModel: 'Project',
+      message: `Project "${project.title}" has been marked as completed!`,
+    });
+    emit(ROOMS.user(collabId.toString()), EVENTS.NOTIF_NEW, { type: 'system' });
+  }
+
+  return { message: 'Project completed successfully' };
+};
+
 module.exports = {
   createProject,
   getProjects,
@@ -164,4 +217,5 @@ module.exports = {
   getProjectById,
   updateProject,
   deleteProject,
+  finishProject,
 };

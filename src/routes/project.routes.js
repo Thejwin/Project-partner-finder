@@ -30,6 +30,14 @@ router.patch ('/:projectId/membership/proposals/:userId/reject', protect, requir
 router.delete('/:projectId/membership/collaborators/:userId',  protect, requireProjectOwner, ctrl.removeCollaborator);
 router.post  ('/:projectId/membership/invite/:userId',         protect, requireProjectOwner, ctrl.inviteUser);
 router.post  ('/:projectId/membership/add/:userId',            protect, requireProjectOwner, ctrl.addCollaborator);
+router.delete('/:projectId/membership/leave',                  protect, requireProjectMember, ctrl.leaveProject);
+
+// ── Finish project ────────────────────────────────────────────────────────────
+router.patch ('/:projectId/finish',                             protect, ctrl.finishProject);
+
+// ── Ratings ───────────────────────────────────────────────────────────────────
+router.get   ('/:projectId/ratings',                            protect, requireProjectMember, ctrl.getRatings);
+router.post  ('/:projectId/ratings',                            protect, requireProjectMember, validate(schema.submitRating), ctrl.submitRating);
 
 // ── Tasks (nested) ────────────────────────────────────────────────────────────
 const taskCtrl   = require('../controllers/task.controller');

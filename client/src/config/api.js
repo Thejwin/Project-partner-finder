@@ -31,11 +31,11 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    
+
     // If 401 and we haven't retried yet and it wasn't the refresh route itself
     if (
-      error.response?.status === 401 && 
-      !originalRequest._retry && 
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
       !originalRequest.url.includes('/auth/refresh-token')
     ) {
       if (isRefreshing) {
@@ -65,7 +65,7 @@ api.interceptors.response.use(
         );
 
         const newAccessToken = data.data.accessToken;
-        
+
         // Save both if backend rotates refresh tokens too, otherwise just access
         localStorage.setItem('accessToken', newAccessToken);
         if (data.data.refreshToken) {

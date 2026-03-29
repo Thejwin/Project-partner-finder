@@ -17,6 +17,7 @@ const Notification  = require('./Notification.model');
 const Recommendation = require('./Recommendation.model');
 const SkillVector   = require('./SkillVector.model');
 const SkillMatchScore = require('./SkillMatchScore.model');
+const Rating        = require('./Rating.model');
 
 module.exports = {
   User,
@@ -29,4 +30,5 @@ module.exports = {
   Recommendation,
   SkillVector,
   SkillMatchScore,
+  Rating,
 };

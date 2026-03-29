@@ -1,7 +1,7 @@
 import api from '../config/api';
 
-export const searchUsers = async (query) => {
-  const res = await api.get('/users/search', { params: { q: query } });
+export const searchUsers = async (params) => {
+  const res = await api.get('/users/search', { params });
   return res.data;
 };
 

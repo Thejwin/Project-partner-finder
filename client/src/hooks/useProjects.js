@@ -88,3 +88,42 @@ export const useAddCollaborator = (projectId) => {
     },
   });
 };
+
+export const useFinishProject = (projectId) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => projectService.finishProject(projectId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
+  });
+};
+
+export const useLeaveProject = (projectId) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => projectService.leaveProject(projectId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
+  });
+};
+
+export const useRatings = (projectId) => {
+  return useQuery({
+    queryKey: ['projects', projectId, 'ratings'],
+    queryFn: () => projectService.getRatings(projectId),
+    enabled: !!projectId,
+  });
+};
+
+export const useSubmitRating = (projectId) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => projectService.submitRating({ projectId, ...data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects', projectId, 'ratings'] });
+    },
+  });
+};

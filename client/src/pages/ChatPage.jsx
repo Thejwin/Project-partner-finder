@@ -20,12 +20,31 @@ export const ChatPage = () => {
   const [msgInput, setMsgInput] = useState('');
   const bottomRef = useRef(null);
 
-  // Sync route param with store
+  // Sync route param with store and mark as read
   useEffect(() => {
     if (friendshipId && activeConversationId !== friendshipId) {
       setActiveConversationId(friendshipId);
     }
-  }, [friendshipId, activeConversationId, setActiveConversationId]);
+    
+    // Always mark as read when opening or viewing the chat
+    if (friendshipId && socket) {
+      socket.emit('message:read', { friendshipId });
+      
+      // Optimistically clear the unread count in conversations query
+      qc.setQueryData(['conversations'], (old) => {
+        if (!old || !old.data?.conversations) return old;
+        return {
+          ...old,
+          data: {
+            ...old.data,
+            conversations: old.data.conversations.map((c) => 
+              c.friendshipId === friendshipId ? { ...c, unreadCount: 0 } : c
+            )
+          }
+        };
+      });
+    }
+  }, [friendshipId, activeConversationId, setActiveConversationId, socket, qc]);
 
   // Fetch conversations (left sidebar)
   const { data: convData, isLoading: convLoading } = useQuery({
@@ -66,7 +85,7 @@ export const ChatPage = () => {
           return { 
             ...c, 
             lastMessage: message,
-            unreadCount: fId === friendshipId ? c.unreadCount : (c.unreadCount || 0) + 1
+            unreadCount: fId === friendshipId ? 0 : (c.unreadCount || 0) + 1
           };
         }
         return c;
@@ -194,7 +213,6 @@ export const ChatPage = () => {
                       initials
                     )}
                   </div>
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-center mb-0.5">

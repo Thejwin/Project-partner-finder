@@ -33,4 +33,10 @@ const updateProject = Joi.object({
   ).max(30),
 });
 
-module.exports = { createProject, updateProject };
+const submitRating = Joi.object({
+  rateeId:  Joi.string().required(),
+  score:    Joi.number().integer().min(1).max(5).required(),
+  comment:  Joi.string().max(500).allow('').default(''),
+});
+
+module.exports = { createProject, updateProject, submitRating };

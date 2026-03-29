@@ -177,6 +177,38 @@ const addCollaborator = async (projectId, userId) => {
   return { message: 'Collaborator added' };
 };
 
+const leaveProject = async (projectId, userId) => {
+  const project = await Project.findById(projectId).select('ownerId collaborators title').lean();
+  if (!project) throw AppError('Project not found', 404);
+
+  if (project.ownerId.toString() === userId) {
+    throw AppError('Project owner cannot leave. Transfer ownership or delete the project instead.', 422);
+  }
+
+  const isCollaborator = project.collaborators.some((id) => id.toString() === userId);
+  if (!isCollaborator) {
+    throw AppError('You are not a collaborator on this project', 422);
+  }
+
+  await Project.findByIdAndUpdate(projectId, {
+    $pull: { collaborators: userId },
+  });
+
+  // Notify project owner
+  await Notification.create({
+    userId: project.ownerId,
+    type: 'system',
+    referenceId: projectId,
+    referenceModel: 'Project',
+    message: `A collaborator left your project "${project.title}".`,
+  });
+
+  emit(ROOMS.user(project.ownerId.toString()), EVENTS.NOTIF_NEW, { type: 'system' });
+  emit(ROOMS.project(projectId.toString()), EVENTS.MEMBER_LEFT, { userId, projectId });
+
+  return { message: 'You have left the project' };
+};
+
 module.exports = {
   applyToProject,
   getProposals,
@@ -185,4 +217,5 @@ module.exports = {
   removeCollaborator,
   inviteUser,
   addCollaborator,
+  leaveProject,
 };

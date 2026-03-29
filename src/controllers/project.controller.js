@@ -3,6 +3,7 @@
 const projectService    = require('../services/project.service');
 const membershipService = require('../services/membership.service');
 const recommendationService = require('../services/recommendation.service');
+const ratingService     = require('../services/rating.service');
 const { success, created } = require('../utils/apiResponse');
 const asyncHandler       = require('../utils/asyncHandler');
 
@@ -92,7 +93,36 @@ exports.addCollaborator = asyncHandler(async (req, res) => {
   success(res, result);
 });
 
+exports.leaveProject = asyncHandler(async (req, res) => {
+  const result = await membershipService.leaveProject(req.params.projectId, req.user._id);
+  success(res, result);
+});
+
 exports.getRecommendedProjects = asyncHandler(async (req, res) => {
   const projects = await recommendationService.getRecommendedProjects(req.user._id);
   success(res, { projects });
+});
+
+// ── Finish project ────────────────────────────────────────────────────────────
+exports.finishProject = asyncHandler(async (req, res) => {
+  const result = await projectService.finishProject(req.params.projectId, req.user._id);
+  success(res, result);
+});
+
+// ── Ratings ───────────────────────────────────────────────────────────────────
+exports.submitRating = asyncHandler(async (req, res) => {
+  const { rateeId, score, comment } = req.body;
+  const rating = await ratingService.submitRating(
+    req.params.projectId,
+    req.user._id,
+    rateeId,
+    score,
+    comment
+  );
+  created(res, { rating });
+});
+
+exports.getRatings = asyncHandler(async (req, res) => {
+  const result = await ratingService.getRatings(req.params.projectId, req.user._id);
+  success(res, result);
 });

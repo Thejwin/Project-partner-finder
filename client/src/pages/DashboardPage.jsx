@@ -1,23 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useProjects, useRecommendedProjects } from '../hooks/useProjects';
+import { projectService } from '../services';
 import { ProjectCard } from '../components/project/ProjectCard';
 import { Sparkles, Search } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 export const DashboardPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const { data, isLoading } = useProjects({ 
-    status: 'open', 
-    limit: 6,
-    ...(searchQuery && { q: searchQuery }) 
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+
+  // Debounce the search query
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(searchQuery), 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Use regular browse when no query, text search when there is one
+  const { data, isLoading } = useQuery({
+    queryKey: ['dashboard-projects', debouncedQuery],
+    queryFn: () => debouncedQuery
+      ? projectService.searchProjects({ q: debouncedQuery, limit: 6 })
+      : projectService.getProjects({ status: 'open', limit: 6 }),
   });
   const { data: recData, isLoading: isRecLoading } = useRecommendedProjects();
-
-  const handleSearchKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      // Logic for triggering search is already handled by the useProjects dependency on searchQuery
-      console.log('Searching for:', searchQuery);
-    }
-  };
 
   return (
     <div className="max-w-6xl mx-auto h-full space-y-12 pb-12">
@@ -35,13 +40,12 @@ export const DashboardPage = () => {
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-5 w-5 text-surface-400" />
             </div>
-            <input 
-              type="text" 
-              placeholder="Search projects or skills..." 
+            <input
+              type="text"
+              placeholder="Search projects or skills..."
               className="block w-full sm:w-72 pl-10 pr-3 py-3 border-transparent rounded-xl text-surface-900 bg-white placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent transition-all shadow-sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={handleSearchKeyPress}
             />
           </div>
         </div>
@@ -52,7 +56,7 @@ export const DashboardPage = () => {
         <div className="flex items-center gap-2 mb-6">
           <Sparkles className="w-5 h-5 text-amber-500" />
           <h2 className="text-xl font-bold text-surface-900">Recommended for You</h2>
-          <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-md uppercase tracking-wider">AI Powered</span>
+          {/* <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-md uppercase tracking-wider">AI Powered</span> */}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {isRecLoading ? (
@@ -63,7 +67,7 @@ export const DashboardPage = () => {
             ))
           ) : (
             <div className="col-span-full py-12 text-center bg-surface-50 rounded-2xl border border-dashed border-surface-200">
-               <p className="text-surface-500 italic">No recommendations yet. Try adding more skills to your profile!</p>
+              <p className="text-surface-500 italic">No recommendations yet. Try adding more skills to your profile!</p>
             </div>
           )}
         </div>
