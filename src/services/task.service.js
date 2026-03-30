@@ -109,13 +109,10 @@ const updateTaskStatus = async (taskId, projectId, status, requesterId) => {
   const task = await Task.findOne({ _id: taskId, projectId }).lean();
   if (!task) throw AppError('Task not found', 404);
 
-  const project = await Project.findById(projectId).select('ownerId').lean();
-  const isOwner    = project.ownerId.toString() === requesterId;
-  const isAssignee = task.assignedTo && task.assignedTo.toString() === requesterId;
+  const project = await Project.findById(projectId).select('ownerId collaborators').lean();
+  if (!project) throw AppError('Project not found', 404);
 
-  if (!isOwner && !isAssignee) {
-    throw AppError('Only the owner or assignee can update task status', 403);
-  }
+  assertMember(project, requesterId);
 
   const updated = await Task.findByIdAndUpdate(
     taskId,
