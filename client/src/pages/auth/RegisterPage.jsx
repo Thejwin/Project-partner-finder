@@ -39,7 +39,7 @@ export const RegisterPage = () => {
       addToast('Account created successfully!', 'success');
       login(res.data.user, res.data.accessToken, res.data.refreshToken);
     } catch (err) {
-      addToast(err.response?.data?.message || 'Registration failed.', 'error');
+      addToast(err.response?.data?.error || 'Registration failed.', 'error');
     } finally {
       setIsLoading(false);
     }

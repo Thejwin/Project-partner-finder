@@ -3,22 +3,36 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useCreateTask } from '../../hooks/useTasks';
+import { useProjectDetails } from '../../hooks/useProjects';
 import { useNotification } from '../../context/NotificationContext';
 
 export const CreateTaskModal = ({ isOpen, onClose, projectId }) => {
   const { mutate: createTask, isLoading } = useCreateTask(projectId);
+  const { data: projectData } = useProjectDetails(projectId);
   const { addToast } = useNotification();
   
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     priority: 'medium',
+    assignedTo: '',
     dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 week from now
   });
 
+  const project = projectData?.data?.project;
+  const members = project ? [
+    { _id: project.ownerId?._id, username: project.ownerId?.username, role: 'Owner' },
+    ...(project.collaborators || []).map(c => ({ _id: c?._id, username: c?.username, role: 'Collaborator' }))
+  ].filter(m => m._id) : [];
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    createTask(formData, {
+    const payload = {
+      ...formData,
+      assignedTo: formData.assignedTo || null
+    };
+
+    createTask(payload, {
       onSuccess: () => {
         addToast('Task created successfully!', 'success');
         onClose();
@@ -26,6 +40,7 @@ export const CreateTaskModal = ({ isOpen, onClose, projectId }) => {
           title: '',
           description: '',
           priority: 'medium',
+          assignedTo: '',
           dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         });
       },
@@ -90,6 +105,25 @@ export const CreateTaskModal = ({ isOpen, onClose, projectId }) => {
             value={formData.dueDate}
             onChange={handleChange}
           />
+        </div>
+
+        <div className="w-full">
+          <label className="block text-sm font-medium text-surface-700 mb-1.5">
+            Assign To
+          </label>
+          <select
+            name="assignedTo"
+            className="block w-full rounded-lg border-surface-300 bg-white px-4 py-2 text-surface-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+            value={formData.assignedTo}
+            onChange={handleChange}
+          >
+            <option value="">Not assigned</option>
+            {members.map(member => (
+              <option key={member._id} value={member._id}>
+                {member.username} ({member.role})
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t border-surface-100">

@@ -29,6 +29,14 @@ export const useRecommendedProjects = () => {
   });
 };
 
+export const useRecommendedUsers = (projectId) => {
+  return useQuery({
+    queryKey: ['projects', projectId, 'recommendations', 'users'],
+    queryFn: () => projectService.getRecommendedUsers(projectId),
+    enabled: !!projectId,
+  });
+};
+
 export const useProjectDetails = (id) => {
   return useQuery({
     queryKey: ['projects', id],

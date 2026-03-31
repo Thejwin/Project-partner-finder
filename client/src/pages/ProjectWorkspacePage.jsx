@@ -1,10 +1,10 @@
 import { useParams } from 'react-router-dom';
-import { useProjectDetails, useProposals, useRespondToProposal, useAddCollaborator, useFinishProject, useLeaveProject, useRemoveCollaborator } from '../hooks/useProjects';
+import { useProjectDetails, useProposals, useRespondToProposal, useAddCollaborator, useFinishProject, useLeaveProject, useRemoveCollaborator, useRecommendedUsers } from '../hooks/useProjects';
 import { useTasks } from '../hooks/useTasks';
 import { useActivities } from '../hooks/useActivities';
 import { useProjectStore } from '../store/useProjectStore';
-import { 
-  Users, LayoutTemplate, Sparkles, FolderKanban, Settings, Search, UserPlus, X, 
+import {
+  Users, LayoutTemplate, Sparkles, FolderKanban, Settings, Search, UserPlus, X,
   CheckCircle2, Star, LogOut, Calendar, TrendingUp, Clock, ClipboardList, UserCheck,
   Info, History, FileText, Trash2
 } from 'lucide-react';
@@ -23,7 +23,7 @@ export const ProjectWorkspacePage = () => {
   const { activeTab, setActiveTab } = useProjectStore();
   const { user } = useAuth();
   const { addToast } = useNotification();
-  
+
   // State for user search
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -45,7 +45,8 @@ export const ProjectWorkspacePage = () => {
   // New data for Overview
   const { data: tasksData } = useTasks(projectId);
   const { data: activitiesData, isLoading: isLoadingActivities } = useActivities(projectId);
-  
+  const { data: recommendedUsersData, isLoading: isLoadingRecs } = useRecommendedUsers(isOwner ? projectId : null);
+
   const tasks = tasksData?.data?.tasks || [];
   const completedTasks = tasks.filter(t => t.status === 'done').length;
   const progressPercent = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
@@ -105,9 +106,9 @@ export const ProjectWorkspacePage = () => {
               {project.description || "No description provided."}
             </p>
           </div>
-          
+
           <div className="flex sm:flex-col items-center gap-3 shrink-0">
-            <Link 
+            <Link
               to={`/projects/${projectId}/tasks`}
               className="flex items-center gap-2 bg-primary-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-primary-700 transition-colors w-full justify-center shadow-sm shadow-primary-600/20"
             >
@@ -115,7 +116,7 @@ export const ProjectWorkspacePage = () => {
               Task Board
             </Link>
             {isOwner && (
-              <button 
+              <button
                 onClick={() => setIsEditModalOpen(true)}
                 className="flex items-center gap-2 bg-surface-100 text-surface-700 px-5 py-2.5 rounded-lg font-medium hover:bg-surface-200 transition-colors w-full justify-center border border-surface-200"
               >
@@ -154,10 +155,10 @@ export const ProjectWorkspacePage = () => {
                 Completed
               </span>
             )}
-            
+
             {/* Leave Project — member only (not owner), not completed or closed */}
             {!isOwner && isMember && project.status !== 'completed' && project.status !== 'closed' && (
-              <button 
+              <button
                 onClick={() => setShowLeaveConfirm(true)}
                 disabled={isLeaving}
                 className="flex items-center gap-2 bg-red-50 text-red-600 px-5 py-2.5 rounded-lg font-medium hover:bg-red-100 transition-colors w-full justify-center border border-red-200 shadow-sm disabled:opacity-50"
@@ -168,7 +169,7 @@ export const ProjectWorkspacePage = () => {
             )}
 
             {project.ownerId._id !== user._id && !project.collaborators.some(c => c._id === user._id) && project.status !== 'completed' && project.status !== 'closed' && (
-              <button 
+              <button
                 onClick={async () => {
                   try {
                     await projectService.applyToProject(projectId);
@@ -210,11 +211,10 @@ export const ProjectWorkspacePage = () => {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 pb-3 px-4 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === tab.id 
-                ? 'border-primary-600 text-primary-700' 
+            className={`flex items-center gap-2 pb-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id
+                ? 'border-primary-600 text-primary-700'
                 : 'border-transparent text-surface-500 hover:text-surface-800 hover:border-surface-300'
-            }`}
+              }`}
           >
             <tab.icon className="w-4 h-4" />
             {tab.label}
@@ -268,7 +268,7 @@ export const ProjectWorkspacePage = () => {
                       Project README
                     </h3>
                     {isOwner && (
-                      <button 
+                      <button
                         onClick={() => setIsEditModalOpen(true)}
                         className="text-sm font-semibold text-primary-600 hover:text-primary-700 hover:underline transition-all"
                       >
@@ -276,7 +276,7 @@ export const ProjectWorkspacePage = () => {
                       </button>
                     )}
                   </div>
-                  
+
                   <div className="bg-surface-50 border border-surface-200 rounded-2xl p-6 min-h-[300px]">
                     {!project.readme ? (
                       <div className="flex flex-col items-center justify-center h-full text-center py-12">
@@ -285,7 +285,7 @@ export const ProjectWorkspacePage = () => {
                         {isOwner && <p className="text-sm text-surface-400 mt-1">Add a README in project settings to guide your team.</p>}
                       </div>
                     ) : (
-                      <div className="prose prose-surface max-w-none">
+                      <div className="prose prose-surface max-w-none overflow-hidden break-words">
                         <p className="text-surface-700 whitespace-pre-wrap leading-relaxed font-sans text-base">
                           {project.readme}
                         </p>
@@ -293,7 +293,7 @@ export const ProjectWorkspacePage = () => {
                     )}
                   </div>
                 </section>
-                
+
                 {/* Timeline info */}
                 <section className="grid sm:grid-cols-2 gap-4">
                   <div className="p-4 bg-white border border-surface-200 rounded-xl flex items-center gap-4">
@@ -315,50 +315,50 @@ export const ProjectWorkspacePage = () => {
 
               {/* Right: Activity Log */}
               <div className="space-y-6">
-                 <h3 className="text-lg font-bold text-surface-900 flex items-center gap-2 mb-4">
-                   <History className="w-5 h-5 text-primary-500" />
-                   Recent Activity
-                 </h3>
+                <h3 className="text-lg font-bold text-surface-900 flex items-center gap-2 mb-4">
+                  <History className="w-5 h-5 text-primary-500" />
+                  Recent Activity
+                </h3>
 
-                 <div className="relative">
-                   {/* Vertical Line */}
-                   <div className="absolute left-6 top-1 bottom-1 w-0.5 bg-surface-100" />
-                   
-                   <div className="space-y-6">
-                     {isLoadingActivities ? (
-                       [1,2,3].map(i => <div key={i} className="h-16 bg-surface-50 rounded-xl animate-pulse ml-12" />)
-                     ) : activities.length === 0 ? (
-                       <p className="text-sm text-surface-400 italic text-center py-8">No recent activity found.</p>
-                     ) : (
-                       activities.slice(0, 10).map((act, i) => (
-                         <div key={act._id || i} className="relative pl-12">
-                           {/* Log Roundel */}
-                           <div className="absolute left-[20px] top-0 w-2 h-2 rounded-full bg-primary-500 border-4 border-white shadow-[0_0_0_2px_#f1f5f9]" />
-                           
-                           <div>
-                             <p className="text-sm text-surface-800 leading-snug">
-                               <span className="font-bold text-surface-950">{act.userId?.username || 'System'}</span> {act.description}
-                             </p>
-                             <p className="text-[10px] font-bold text-surface-400 uppercase mt-1">
-                               {new Date(act.createdAt).toLocaleString(undefined, { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' })}
-                             </p>
-                           </div>
-                         </div>
-                       ))
-                     )}
-                   </div>
-                   
-                   {activities.length > 10 && (
-                     <p className="text-xs text-center text-surface-400 mt-6 pt-4 border-t border-surface-50 font-medium cursor-default">
-                       Showing latest 10 events
-                     </p>
-                   )}
-                 </div>
+                <div className="relative">
+                  {/* Vertical Line */}
+                  <div className="absolute left-6 top-1 bottom-1 w-0.5 bg-surface-100" />
+
+                  <div className="space-y-6">
+                    {isLoadingActivities ? (
+                      [1, 2, 3].map(i => <div key={i} className="h-16 bg-surface-50 rounded-xl animate-pulse ml-12" />)
+                    ) : activities.length === 0 ? (
+                      <p className="text-sm text-surface-400 italic text-center py-8">No recent activity found.</p>
+                    ) : (
+                      activities.slice(0, 10).map((act, i) => (
+                        <div key={act._id || i} className="relative pl-12">
+                          {/* Log Roundel */}
+                          <div className="absolute left-[20px] top-0 w-2 h-2 rounded-full bg-primary-500 border-4 border-white shadow-[0_0_0_2px_#f1f5f9]" />
+
+                          <div>
+                            <p className="text-sm text-surface-800 leading-snug break-words">
+                              <span className="font-bold text-surface-950">{act.userId?.username || 'System'}</span> {act.description}
+                            </p>
+                            <p className="text-[10px] font-bold text-surface-400 uppercase mt-1">
+                              {new Date(act.createdAt).toLocaleString(undefined, { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' })}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {activities.length > 10 && (
+                    <p className="text-xs text-center text-surface-400 mt-6 pt-4 border-t border-surface-50 font-medium cursor-default">
+                      Showing latest 10 events
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         )}
-        
+
         {activeTab === 'members' && (
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -366,7 +366,7 @@ export const ProjectWorkspacePage = () => {
                 Collaborators
                 <span className="text-sm font-normal text-surface-500 bg-surface-100 px-3 py-1 rounded-full">{project.collaborators.length + 1} members</span>
               </h2>
-              
+
               {isOwner && (
                 <div className="relative w-full sm:w-64">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -380,7 +380,7 @@ export const ProjectWorkspacePage = () => {
                     className="block w-full pl-10 pr-3 py-2 border border-surface-200 rounded-lg text-sm placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                   {searchQuery && (
-                    <button 
+                    <button
                       onClick={() => setSearchQuery('')}
                       className="absolute inset-y-0 right-0 pr-3 flex items-center text-surface-400 hover:text-surface-600"
                     >
@@ -412,11 +412,11 @@ export const ProjectWorkspacePage = () => {
                               <Link to={`/users/${searchUser.userId._id}`} className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center font-bold text-primary-700 hover:opacity-80 transition-opacity shrink-0">
                                 {searchUser.userId.username[0].toUpperCase()}
                               </Link>
-                              <div>
-                                <Link to={`/users/${searchUser.userId._id}`} className="text-sm font-bold text-surface-900 hover:text-primary-600 transition-colors">
+                              <div className="min-w-0">
+                                <Link to={`/users/${searchUser.userId._id}`} className="text-sm font-bold text-surface-900 hover:text-primary-600 transition-colors truncate block">
                                   {searchUser.userId.username}
                                 </Link>
-                                <p className="text-xs text-surface-500">{searchUser.skills?.slice(0, 3).join(', ')}</p>
+                                <p className="text-xs text-surface-500 truncate">{searchUser.skills?.slice(0, 3).join(', ')}</p>
                               </div>
                             </div>
                             <button
@@ -434,7 +434,7 @@ export const ProjectWorkspacePage = () => {
                               }}
                               className={cn(
                                 "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
-                                isAlreadyMember 
+                                isAlreadyMember
                                   ? "bg-surface-100 text-surface-400 cursor-not-allowed"
                                   : "bg-primary-600 text-white hover:bg-primary-700"
                               )}
@@ -451,6 +451,54 @@ export const ProjectWorkspacePage = () => {
               </div>
             )}
 
+            {/* AI Recommended Collaborators */}
+            {isOwner && (
+              <div className="mb-12">
+                <div className="flex items-center gap-2 mb-4 group cursor-help" title="AI matches users based on their skills vs project requirements">
+                  <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
+                  <h3 className="text-lg font-bold text-surface-900">Recommended for this Project</h3>
+                </div>
+
+                {isLoadingRecs ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[1, 2, 3].map(i => <div key={i} className="h-24 bg-surface-50 rounded-xl animate-pulse border border-surface-100" />)}
+                  </div>
+                ) : !recommendedUsersData?.data?.users || recommendedUsersData.data.users.length === 0 ? (
+                  <div className="p-8 text-center bg-surface-50 rounded-2xl border border-dashed border-surface-200">
+                    <p className="text-sm text-surface-500">No specific matches found yet. Try adding more required skills to the project!</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {recommendedUsersData.data.users.slice(0, 3).map((rec) => (
+                      <div key={rec.userId} className="flex items-center justify-between p-3 rounded-xl border border-amber-100 bg-amber-50/30 hover:bg-amber-50/50 transition-all group shadow-sm">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Link to={`/users/${rec.userId}`} className="w-8 h-8 bg-amber-200 rounded-full flex items-center justify-center font-bold text-amber-700 shrink-0 text-xs">
+                            {rec.username[0].toUpperCase()}
+                          </Link>
+                          <Link to={`/users/${rec.userId}`} className="text-sm font-bold text-surface-900 truncate hover:text-primary-600 transition-colors">
+                            {rec.username}
+                          </Link>
+                        </div>
+                        <button
+                          disabled={isAddingMember}
+                          onClick={() => {
+                            addMember(rec.userId, {
+                              onSuccess: () => addToast(`${rec.username} added to team!`, 'success'),
+                              onError: (err) => addToast(err.response?.data?.error || 'Failed to add', 'error')
+                            });
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-amber-200 rounded-lg text-[10px] font-bold text-amber-700 hover:bg-amber-600 hover:text-white hover:border-amber-600 transition-all shadow-sm shrink-0 uppercase tracking-wider"
+                        >
+                          <UserPlus className="w-3 h-3" />
+                          Add
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Owner */}
               <div className="flex items-center gap-4 p-4 rounded-xl border border-primary-200 bg-primary-50/50">
@@ -464,7 +512,7 @@ export const ProjectWorkspacePage = () => {
                   <p className="text-xs text-primary-700 font-medium tracking-wide uppercase mt-0.5">Owner</p>
                 </div>
               </div>
-              
+
               {/* Members */}
               {project.collaborators.map((c, i) => (
                 <div key={c._id || i} className="flex items-center justify-between p-4 rounded-xl border border-surface-200 bg-white shadow-sm hover:border-surface-300 transition-all group">
@@ -472,8 +520,8 @@ export const ProjectWorkspacePage = () => {
                     <Link to={`/users/${c._id}`} className="w-12 h-12 bg-surface-200 rounded-full flex items-center justify-center font-bold text-surface-600 text-lg hover:opacity-80 transition-opacity shrink-0">
                       {c.username?.[0]?.toUpperCase() || '?'}
                     </Link>
-                    <div>
-                      <Link to={`/users/${c._id}`} className="font-bold text-surface-900 hover:text-primary-600 transition-colors">
+                    <div className="min-w-0">
+                      <Link to={`/users/${c._id}`} className="font-bold text-surface-900 hover:text-primary-600 transition-colors truncate block">
                         {c.username || 'Collaborator'}
                       </Link>
                       <p className="text-xs text-surface-500 font-medium tracking-wide uppercase mt-0.5">Member</p>
@@ -581,10 +629,10 @@ export const ProjectWorkspacePage = () => {
         )}
       </div>
 
-      <EditProjectModal 
-        isOpen={isEditModalOpen} 
-        onClose={() => setIsEditModalOpen(false)} 
-        project={project} 
+      <EditProjectModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        project={project}
       />
 
       <RateMembersModal

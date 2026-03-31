@@ -120,6 +120,11 @@ exports.getRecommendedProjects = asyncHandler(async (req, res) => {
   success(res, { projects });
 });
 
+exports.getRecommendedUsers = asyncHandler(async (req, res) => {
+  const users = await recommendationService.getRecommendedUsers(req.params.projectId);
+  success(res, { users });
+});
+
 // ── Finish project ────────────────────────────────────────────────────────────
 exports.finishProject = asyncHandler(async (req, res) => {
   const result = await projectService.finishProject(req.params.projectId, req.user._id);

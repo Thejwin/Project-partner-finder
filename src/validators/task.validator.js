@@ -5,7 +5,7 @@ const Joi = require('joi');
 const createTask = Joi.object({
   title:       Joi.string().min(2).max(200).required(),
   description: Joi.string().max(2000),
-  assignedTo:  Joi.string().hex().length(24),      // ObjectId string
+  assignedTo:  Joi.string().hex().length(24).allow(null),      // ObjectId string
   priority:    Joi.string().valid('low','medium','high').default('medium'),
   dueDate:     Joi.date(),
 });
@@ -13,7 +13,7 @@ const createTask = Joi.object({
 const updateTask = Joi.object({
   title:       Joi.string().min(2).max(200),
   description: Joi.string().max(2000),
-  assignedTo:  Joi.string().hex().length(24),
+  assignedTo:  Joi.string().hex().length(24).allow(null),
   priority:    Joi.string().valid('low','medium','high'),
   dueDate:     Joi.date(),
 });

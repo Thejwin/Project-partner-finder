@@ -15,8 +15,8 @@ app = FastAPI()
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-DB_NAME  = os.getenv("DB_NAME", "project_connect")  # set DB_NAME in .env to match your Atlas DB
+""" MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+DB_NAME  = os.getenv("DB_NAME", "project_connect")  """ # set DB_NAME in .env to match your Atlas DB
 client = MongoClient(MONGO_URI)
 db = client[DB_NAME]
 
@@ -49,7 +49,7 @@ def cosine_similarity(v1, v2):
 
 # ------------------ APIs ------------------
 
-# 1️⃣ Ensure SkillVector exists
+# Ensure SkillVector exists
 @app.post("/api/vectors/generate")
 def generate_vectors(data: SkillRequest):
     created_names: list[str] = []
@@ -73,7 +73,7 @@ def generate_vectors(data: SkillRequest):
     }
 
 
-# 2️⃣ Compute SkillMatchScore
+# Compute SkillMatchScore
 @app.post("/api/match/compute")
 def compute_match(data: MatchRequest):
 
